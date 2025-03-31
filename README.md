@@ -13,7 +13,9 @@ Keeps the vanilla ´offHand´ and ´equipment´ slot mappings
 Works seamlessly with the ´KeepInventory´ game rule
 ´quickMove´ (SHIFT-click-move) works with the extra inventory
 
+# Download:
 
+[Extended Inventory on Modrinth](https://modrinth.com/mod/extended-inventory)
 
 ---
 
