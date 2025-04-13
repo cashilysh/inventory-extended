@@ -1,22 +1,44 @@
-# Extended Inventory
+# Inventory Extended
 
 The default Minecraft inventory was designed when the game had far fewer items. Nowadays, it feels restrictive as it's quickly filling up with junk and making inventory management a hassle.
 
 Shulker boxes and bundles aren’t practical alternatives—they require constant placement, breaking, and micromanagement, disrupting the flow rather than improving it.
 
-#### So I made this mod that permanently adds three inventory rows below the hotbar, expanding storage and simplifying resource management.
+<br>
 
 **Features:**
-- Extra inventory slots are stored along the vanilla inventory NBT player data
-- Vanilla inventory is prefered for item-pickup and crafting outputs (unless full)
-- Keeps the vanilla `offHand` and `equipment` slot mappings
+- Expands the inventory slots in a vanilla way
+- The extended inventory is usable in all in-game inventory screens
 - Works seamlessly with the `KeepInventory` game rule
-- `quickMove` (SHIFT-click-move) works with the extra inventory
 
-# Download:
+<br>
 
-[Extended Inventory on Modrinth](https://modrinth.com/mod/extended-inventory)
+**Notes:**
+- Vanilla `offHand` and `equipment` slot mappings are modified and may break mod-compatibility
+- Creative Inventory is still buggy and returns glitched items
+- Quick-SHIFT-Click sort may be glitchy and not sort to the expanded slots
+- Currently only Client compatibility
+<br>
+
+<br>
+
+**This is a WIP version and may contain other bugs and glitches! Use at your own risk!**
+
+<br>
+<br>
+
+**Want to help improve the mod? Report any bugs by opening an issue on GitHub :)**
+
+<br>
+
 
 ---
 
-Uninstalling the mod deletes your extra inventory and its contents permanently (vanilla inventory remains). I’m not responsible for lost items or data corruption. Back up your items/player data before removing or upgrading the mod or Minecraft version.
+
+# Download:
+
+[Inventory Extended on Modrinth](https://modrinth.com/project/inventory-extended)
+
+---
+
+*Uninstalling the mod deletes your extra inventory and its contents permanently. I’m not responsible for lost items or data corruption. Back up your items/player data before removing or upgrading the mod or Minecraft version.*
