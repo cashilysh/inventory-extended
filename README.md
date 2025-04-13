@@ -1,4 +1,4 @@
-# Inventory Extended
+# Inventory: Extended
 
 The default Minecraft inventory was designed when the game had far fewer items. Nowadays, it feels restrictive as it's quickly filling up with junk and making inventory management a hassle.
 
