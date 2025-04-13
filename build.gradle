@@ -1,0 +1,198 @@
+plugins {
+    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = '1.0.0'
+group = 'inventoryextended'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "Fabric"
+        url = "https://maven.fabricmc.net/"
+    }
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
+    maven {
+        name = "Shedaniel"
+        url = "https://maven.shedaniel.me/"
+    }
+}
+
+ext {
+    primaryVersion = '1.21.5'
+}
+
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+
+
+def loadVersionMappings() {
+    def mappingsFile = file('version_mappings.json')
+    if (!mappingsFile.exists()) {
+        throw new GradleException("Version mappings file not found at ${mappingsFile.path}")
+    }
+    
+    def slurper = new JsonSlurper()
+    def mappings = slurper.parseText(mappingsFile.text)
+    
+    // Only load the versionMappings, primaryVersion remains hardcoded
+	ext.versionMappings = mappings.versionMappings.collectEntries { version, data -> [version, data] }
+
+}
+
+afterEvaluate {
+    println "Loaded version_mappings for ${versionMappings.size()} Minecraft versions (${versionMappings.keySet().join(', ')})"
+}
+
+// Load the version mappings
+loadVersionMappings()
+
+def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : primaryVersion
+
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+
+// Store original file contents as a project-level property
+ext.originalFileContents = [:]
+
+// Helper method to restore individual files
+def restoreFiles() {
+    if (project.ext.originalFileContents && !project.ext.originalFileContents.isEmpty()) {
+        println "Restoring individually modified files"
+        
+        project.ext.originalFileContents.each { filePath, content ->
+            def file = new File(filePath)
+            if (content == null) {
+                // This was a new file, delete it
+                println "Removing temporary file: ${file.path}"
+                file.delete()
+            } else {
+                // This was an existing file, restore it
+                println "Restoring: ${file.path}"
+                file.text = content
+            }
+        }
+        
+        // Clear the backup after restoration
+        project.ext.originalFileContents.clear()
+    }
+}
+
+
+
+// Task to apply version-specific overrides
+task applyVersionSpecificOverrides {
+
+    
+    def mainSourceDir = file("src/main/java")
+    def versionSpecificDir = file("src/version_specific/${targetVersion}/java")
+	def backupDir = file("backup_scr/src_backup_${new Date().format('yyyyMMdd_HHmmss')}")
+    
+    
+    onlyIf { versionSpecificDir.exists() }
+    
+    doFirst {
+        // Ensure we restore any previously overridden files first
+        restoreFiles()
+        
+        println "Applying version-specific overrides for Minecraft ${targetVersion}"
+        
+        // Find all Java files in the version-specific directory and its subdirectories
+        def versionSpecificFiles = fileTree(versionSpecificDir).matching {
+            include "**/*.java"
+        }
+        
+        // For each version-specific file, override the corresponding main source file
+        versionSpecificFiles.each { versionFile ->
+            // Get the file path relative to the version-specific java directory
+            def relativePath = versionFile.path.substring(versionSpecificDir.path.length())
+            def targetFile = new File(mainSourceDir, relativePath)
+            
+            // If target file exists, backup its content and replace with version-specific content
+            if (targetFile.exists()) {
+                println "Overriding: ${relativePath}"
+                project.ext.originalFileContents[targetFile.path] = targetFile.text
+				
+				// Create physical backup copy
+				def backupFile = new File(backupDir, relativePath)
+                backupFile.parentFile.mkdirs()
+                backupFile.text = targetFile.text	
+				
+                targetFile.text = versionFile.text
+            } else {
+                println "Target file doesn't exist, creating: ${relativePath}"
+                targetFile.parentFile.mkdirs() // Create parent directories if they don't exist
+                project.ext.originalFileContents[targetFile.path] = null // Mark as a new file
+                targetFile.text = versionFile.text
+            }
+        }
+    }
+}
+
+
+tasks.named('compileJava').configure {
+	dependsOn(editFabricModJson)
+    dependsOn(applyVersionSpecificOverrides)
+}
+
+gradle.buildFinished { result ->
+	println "\n#######################################################"
+	println "#################### TASK COMPLETE ####################"
+	println "#######################################################\n"
+	
+    restoreFiles()
+	updateFabricModJson(primaryVersion)
+}
+
+
+task editFabricModJson {
+	doFirst {
+    updateFabricModJson(targetVersion)
+	}
+}
+
+def updateFabricModJson(String version) {
+    def fabricModFile = file('src/main/resources/fabric.mod.json')
+    def jsonSlurper = new JsonSlurper()
+    def fabricMod = jsonSlurper.parse(fabricModFile)
+    
+    if (!versionMappings.containsKey(version)) {
+        throw new GradleException("\nUnsupported Minecraft version: ${version}\n")
+    }
+   
+    
+    // Update mod metadata
+    fabricMod.version = project.version
+    fabricMod.depends = fabricMod.depends ?: [:]
+    fabricMod.depends.minecraft = "~${version}"
+    fabricMod.depends["fabric-api"] = ">=${versionMappings[version].fabricApi}"
+    
+    // Write changes with pretty print
+    fabricModFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(fabricMod))
+	
+	if (version == primaryVersion){
+	println "\nSuccessfully set fabric.mod.json to Minecraft primaryVersion ${version}\n"
+	}
+	else {
+    println "\nSuccessfully updated fabric.mod.json to Minecraft temporary version ${version}\n"
+	}
+}
+
+// Rename the output JAR to include the Minecraft version
+tasks.named("remapJar") {
+	archiveBaseName = 'inventoryextended'
+    archiveClassifier = "mc${targetVersion}"
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${targetVersion}"
+    mappings versionMappings[targetVersion].yarn
+    modImplementation "net.fabricmc:fabric-loader:${versionMappings[targetVersion].loader}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${versionMappings[targetVersion].fabricApi}"
+}
