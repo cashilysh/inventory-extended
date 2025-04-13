@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "inventoryextended.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "PlayerInventoryRecipeButton",
+    "ExtendPlayerInventory",
+    "RemapPlayerSlots",
+	"GlobalDrawExtraSlots",
+	"CraftingScreenRecipeBookButton",
+	"FurnaceScreenRecipeBookButton",
+	"IncreaseGlobalBackgroundHeight",
+	"CreativeInventoryDrawExtraSlots",
+	"ChestsDrawExtraBackground",
+	"BeaconDrawExtraBackground",
+	"HopperDrawExtraBackground"
+	
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

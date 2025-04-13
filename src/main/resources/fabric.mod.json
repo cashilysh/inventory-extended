@@ -1,0 +1,29 @@
+{
+    "schemaVersion": 1,
+    "id": "inventoryextended",
+    "version": "1.0.0",
+    "name": "Inventory: Extended",
+    "description": "Doubles the player's main inventory size",
+    "authors": [
+        "cashilysh (SaureHefePegorino)"
+    ],
+    "contact": {
+        
+    },
+    "license": "Apache 2.0",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "inventoryextended.InventoryExtended"
+        ]
+    },
+    "mixins": [
+        "inventoryextended.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.14.21",
+        "minecraft": "~1.21.5",
+        "java": ">=17",
+        "fabric-api": ">=0.119.9+1.21.5"
+    }
+}
