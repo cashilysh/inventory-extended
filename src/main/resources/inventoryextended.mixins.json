@@ -11,7 +11,7 @@
 	"CraftingScreenRecipeBookButton",
 	"FurnaceScreenRecipeBookButton",
 	"IncreaseGlobalBackgroundHeight",
-	"CreativeInventoryDrawExtraSlots",
+	"CreativeInventoryMixin",
 	"ChestsDrawExtraBackground",
 	"BeaconDrawExtraBackground",
 	"HopperDrawExtraBackground"
