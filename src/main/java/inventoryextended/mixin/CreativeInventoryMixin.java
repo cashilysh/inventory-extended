@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
+
 @SuppressWarnings({"overwrite", "MissingJavadoc"})
 //@Environment(EnvType.CLIENT)
 @Mixin(CreativeInventoryScreen.class)
@@ -34,10 +35,27 @@ public abstract class CreativeInventoryMixin {
         return original + 27;
     }
 
+    @ModifyConstant(method = "onMouseClick", constant = @Constant(intValue = 45))
+    private int modify45again(int original) {
+        return original + 27;
+    }
+
     @ModifyConstant(method = "onHotbarKeyPress", constant = @Constant(intValue = 36))
     private static int modify36again2(int original) {
         return original + 27;
     }
 
-	
+    @ModifyConstant(method = "CreativeScreenHandler", constant = @Constant(intValue = 5))
+    private int modiagain2(int original) {
+        return original + 1;
+    }
+/*
+    @Inject(method = "CreativeScreenHandler", at = @At("RETURN"))
+    private static int modifyInventorySize(int original) {
+        return original + 27;
+    }
+	*/
+
+
+
 }
