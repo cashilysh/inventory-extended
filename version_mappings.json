@@ -1,43 +1,50 @@
 {
   "versionMappings": {
+    "1.21.6": {
+      "yarn": "net.fabricmc:yarn:1.21.6+build.1:v2",
+      "loader": "0.16.13",
+      "fabricApi": "0.127.0+1.21.6",
+      "modMenu": "15.0.0-beta.1",
+      "clothConfig": "18.0.145"
+    },
     "1.21.5": {
       "yarn": "net.fabricmc:yarn:1.21.5+build.1:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.124.0+1.21.5",
       "modMenu": "14.0.0-rc.2",
       "clothConfig": "18.0.145"
     },
     "1.21.4": {
       "yarn": "net.fabricmc:yarn:1.21.4+build.8:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.119.2+1.21.4",
       "modMenu": "13.0.3",
       "clothConfig": "17.0.144"
     },
     "1.21": {
       "yarn": "net.fabricmc:yarn:1.21+build.9:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.102.0+1.21",
       "modMenu": "11.0.3",
       "clothConfig": "14.0.139"
     },
     "1.20.6": {
       "yarn": "net.fabricmc:yarn:1.20.6+build.3:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.100.8+1.20.6",
       "modMenu": "10.0.0",
       "clothConfig": "14.0.139"
     },
     "1.20.1": {
       "yarn": "net.fabricmc:yarn:1.20.1+build.10:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.92.5+1.20.1",
       "modMenu": "7.2.2",
       "clothConfig": "11.1.136"
     },
     "1.19.4": {
       "yarn": "net.fabricmc:yarn:1.19.4+build.2:v2",
-      "loader": "0.16.10",
+      "loader": "0.16.13",
       "fabricApi": "0.87.2+1.19.4",
       "modMenu": "6.3.1",
       "clothConfig": "10.1.135"

@@ -45,10 +45,13 @@ public abstract class CreativeInventoryMixin {
         return original + 27;
     }
 
+/* Why was this implemented?
     @ModifyConstant(method = "CreativeScreenHandler", constant = @Constant(intValue = 5))
     private int modiagain2(int original) {
         return original + 1;
     }
+    */
+
 /*
     @Inject(method = "CreativeScreenHandler", at = @At("RETURN"))
     private static int modifyInventorySize(int original) {

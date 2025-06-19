@@ -23,7 +23,7 @@ repositories {
 }
 
 ext {
-    primaryVersion = '1.21.5'
+    primaryVersion = '1.21.6'
 }
 
 import groovy.json.JsonSlurper
