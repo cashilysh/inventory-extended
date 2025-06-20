@@ -80,52 +80,40 @@ import net.minecraft.inventory.Inventory;
 
 import static net.minecraft.item.ItemGroups.INVENTORY;
 
+@Mixin(CreativeInventoryScreen.CreativeScreenHandler.class)
+public class CreativeScreenHandlerMixin {
 
-@SuppressWarnings({"overwrite", "MissingJavadoc"})
-//@Environment(EnvType.CLIENT)
-@Mixin(CreativeInventoryScreen.class)
-public abstract class CreativeInventoryMixin {
 
-    @Inject(method = "onMouseClick", at = @At("HEAD"))
-    private void debugMouseClick(Slot slot, int slotId, int button, SlotActionType actionType, CallbackInfo ci) {
-        if (slot != null) {
-            System.out.println("Slot clicked: " + slot.id + ", Index: " + slot.getIndex() + ", Type: " + actionType);
+
+
+    @ModifyConstant(method = "<init>", constant = @Constant(intValue = 5))
+    private int modifyCreativeRows(int original) {
+        return original + 0; // Expand creative grid from 5x9 to 8x9 to match your inventory expansion
+    }
+
+
+/*
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/CreativeInventoryScreen$CreativeScreenHandler;addPlayerHotbarSlots(Lnet/minecraft/inventory/Inventory;II)V"))
+    private void fixHotbarSlotAlignment(CreativeInventoryScreen.CreativeScreenHandler handler, Inventory playerInventory, int left, int y) {
+        // Add dummy slots to reach the correct index (63)
+        // Using a simple inventory for dummy slots since they're hidden
+        SimpleInventory dummyInventory = new SimpleInventory(27);
+
+        while(handler.slots.size() < 63) {
+            handler.addSlot(new Slot(dummyInventory, 0, -2000, -2000)); // Hidden dummy slots
+        }
+
+        // Now add hotbar at the correct indices (63-71)
+        for(int i = 0; i < 9; ++i) {
+            handler.addSlot(new Slot(playerInventory, i, left + i * 18, y));
         }
     }
 
-
-    @ModifyConstant(method = "setSelectedTab", constant = @Constant(intValue = 45))
-    private int modify45(int original) {
-        return original + 27;
+    // Update the hotbar Y position constant
+    @ModifyConstant(method = "<init>", constant = @Constant(intValue = 112))
+    private int modifyHotbarY(int original) {
+        return 166; // Match your expanded inventory hotbar position
     }
 
-    @ModifyConstant(method = "setSelectedTab", constant = @Constant(intValue = 36))
-    private int modify36(int original) {
-        return original + 27;
-    }
-
-    //Creative inventory hot bar Y-Position
-    @ModifyConstant(method = "setSelectedTab",constant = @Constant(intValue = 112))
-    private int modify112(int original) {
-        return original + 60;
-    }
-
-
-    @ModifyConstant(method = "onMouseClick", constant = @Constant(intValue = 36))
-    private int modify36again(int original) {
-        return original + 27;
-    }
-
-    @ModifyConstant(method = "onMouseClick", constant = @Constant(intValue = 45))
-    private int modify45again(int original) {
-        return original + 27;
-    }
-
-
-    @ModifyConstant(method = "onHotbarKeyPress", constant = @Constant(intValue = 36))
-    private static int modify36again2(int original) {
-        return original + 27;
-    }
-
-
+ */
 }
