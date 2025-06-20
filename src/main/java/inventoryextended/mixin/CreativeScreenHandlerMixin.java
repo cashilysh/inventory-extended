@@ -91,6 +91,7 @@ public class CreativeScreenHandlerMixin {
         return original + 0; // Expand creative grid from 5x9 to 8x9 to match your inventory expansion
     }
 
+    //Add ghost slots upto slot ID 63 then proceed with horbar
 
 /*
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/CreativeInventoryScreen$CreativeScreenHandler;addPlayerHotbarSlots(Lnet/minecraft/inventory/Inventory;II)V"))
