@@ -26,7 +26,6 @@ public abstract class CreativeInventoryMixin {
     private void debugMouseClick(Slot slot, int slotId, int button, SlotActionType actionType, CallbackInfo ci) {
         if (slot != null) {
             System.out.println("Slot clicked: " + slot.id + ", Index: " + slot.getIndex() + ", Type: " + actionType);
-            System.out.println("Is valid hotbar: " + PlayerInventory.isValidHotbarIndex(slot.getIndex()));
         }
     }
 
