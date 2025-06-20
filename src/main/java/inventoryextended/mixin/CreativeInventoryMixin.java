@@ -11,19 +11,19 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 //@Environment(EnvType.CLIENT)
 @Mixin(CreativeInventoryScreen.class)
 public abstract class CreativeInventoryMixin {
-	
+
 
     @ModifyConstant(method = "setSelectedTab", constant = @Constant(intValue = 45))
     private int modify45(int original) {
         return original + 27;
     }
-	
+
     @ModifyConstant(method = "setSelectedTab", constant = @Constant(intValue = 36))
     private int modify36(int original) {
         return original + 27;
     }
-	
-	//Creative inventory hot bar Y-Position
+
+    //Creative inventory hot bar Y-Position
     @ModifyConstant(method = "setSelectedTab",constant = @Constant(intValue = 112))
     private int modify112(int original) {
         return original + 60;
@@ -44,21 +44,6 @@ public abstract class CreativeInventoryMixin {
     private static int modify36again2(int original) {
         return original + 27;
     }
-
-/* Why was this implemented?
-    @ModifyConstant(method = "CreativeScreenHandler", constant = @Constant(intValue = 5))
-    private int modiagain2(int original) {
-        return original + 1;
-    }
-    */
-
-/*
-    @Inject(method = "CreativeScreenHandler", at = @At("RETURN"))
-    private static int modifyInventorySize(int original) {
-        return original + 27;
-    }
-	*/
-
 
 
 }
