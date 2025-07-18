@@ -6,193 +6,219 @@ plugins {
 version = '1.0.0'
 group = 'inventoryextended'
 
-repositories {
-    mavenCentral()
-    maven {
-        name = "Fabric"
-        url = "https://maven.fabricmc.net/"
-    }
-    maven {
-        name = "TerraformersMC"
-        url = "https://maven.terraformersmc.com/"
-    }
-    maven {
-        name = "Shedaniel"
-        url = "https://maven.shedaniel.me/"
+
+// This task handles downloading the version data from the API
+task updateVersionMappings {
+    description = "Downloads the latest version mappings from the Linkie API."
+    doLast {
+        def apiUrl = "https://linkieapi.shedaniel.me/api/versions/all"
+        def mappingsFile = file('version_mappings.json')
+       
+        println "Fetching latest version mappings from ${apiUrl}..."
+        try {
+            // Connect to the URL and get the text content
+            def jsonText = new URL(apiUrl).text
+            // Save the downloaded content to the local file
+            mappingsFile.text = jsonText
+            println "Successfully saved latest mappings to ${mappingsFile.path}"
+        } catch (Exception e) {
+            throw new GradleException("Failed to download version mappings: ${e.message}")
+        }
     }
 }
 
-ext {
-    primaryVersion = '1.21.6'
+repositories {
+    mavenCentral()
+    maven { name = "Fabric"; url = "https://maven.fabricmc.net/" }
+    maven { name = "TerraformersMC"; url = "https://maven.terraformersmc.com/" }
+    maven { name = "Shedaniel"; url = "https://maven.shedaniel.me/" }
+    maven { url = "https://maven.architectury.dev/" }
 }
 
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
-
-
+/**
+ * Loads and transforms version mappings from the local JSON file.
+ * It now also automatically determines the latest stable Minecraft version
+ * and sets it as the latestStableVersion for the project.
+ */
 def loadVersionMappings() {
     def mappingsFile = file('version_mappings.json')
     if (!mappingsFile.exists()) {
-        throw new GradleException("Version mappings file not found at ${mappingsFile.path}")
+        // Instruct the user to run the new task if the file is missing
+        throw new GradleException("Version mappings file not found. Please run the 'updateVersionMappings' task first.")
     }
     
     def slurper = new JsonSlurper()
-    def mappings = slurper.parseText(mappingsFile.text)
+    def mappingsData = slurper.parseText(mappingsFile.text)
     
-    // Only load the versionMappings, primaryVersion remains hardcoded
-	ext.versionMappings = mappings.versionMappings.collectEntries { version, data -> [version, data] }
+    def newVersionMappings = [:]
+    String detectedLatestStableVersion = null // Variable to hold the latest version
 
+    // Iterate over the array under the "fabric" key in the JSON
+    mappingsData.fabric.each { versionEntry ->
+        // Only process entries marked as stable to avoid using release candidates
+        if (versionEntry.stable) {
+            def mcVersion = versionEntry.version
+
+            // The API returns versions newest-first, so the first stable one we find is the latest.
+            if (detectedLatestStableVersion == null) {
+                detectedLatestStableVersion = mcVersion
+            }
+
+            def versionDetails = [:]
+            versionEntry.blocks.each { blockName, blockDetails ->
+                if (blockDetails.dependencies) {
+                    blockDetails.dependencies.each { dep ->
+                        switch (dep.name) {
+                            case "Yarn": versionDetails.yarn = dep.notation; break
+                            case "Fabric Loader": versionDetails.loader = dep.notation; break
+                            case "Fabric API": versionDetails.fabricApi = dep.notation; break
+                            case "Cloth Config": versionDetails.clothConfig = dep.notation; break
+                            case "Mod Menu": versionDetails.modMenu = dep.notation; break
+                        }
+                    }
+                }
+            }
+            newVersionMappings[mcVersion] = versionDetails
+        }
+    }
+
+    ext.versionMappings = newVersionMappings
+
+    // Dynamically set the latest stable version found
+    if (detectedLatestStableVersion != null) {
+        ext.latestStableVersion = detectedLatestStableVersion
+    } else {
+        throw new GradleException("Could not determine the latest stable version from version_mappings.json.")
+    }
 }
 
-afterEvaluate {
-    println "Loaded version_mappings for ${versionMappings.size()} Minecraft versions (${versionMappings.keySet().join(', ')})"
-}
-
-// Load the version mappings
+// Load the version mappings using the updated function
 loadVersionMappings()
 
-def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : primaryVersion
+// This variable now holds the default build version, which is the latest stable one.
+// It can be overridden from the command line (e.g., -PtargetVersion=1.20.6)
+def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : latestStableVersion
 
-import groovy.json.JsonSlurper
-import groovy.json.JsonOutput
+afterEvaluate {
+    println "Automatically set latest stable version to: ${latestStableVersion}"
+    println "Loaded version_mappings for ${versionMappings.size()} Minecraft versions (${versionMappings.keySet().join(', ')})"
+    println "Current build target is: ${targetVersion}"
+}
 
 
-// Store original file contents as a project-level property
+// --- The rest of the script remains largely the same ---
+
 ext.originalFileContents = [:]
 
-// Helper method to restore individual files
 def restoreFiles() {
     if (project.ext.originalFileContents && !project.ext.originalFileContents.isEmpty()) {
         println "Restoring individually modified files"
-        
         project.ext.originalFileContents.each { filePath, content ->
             def file = new File(filePath)
             if (content == null) {
-                // This was a new file, delete it
-                println "Removing temporary file: ${file.path}"
                 file.delete()
             } else {
-                // This was an existing file, restore it
-                println "Restoring: ${file.path}"
                 file.text = content
             }
         }
-        
-        // Clear the backup after restoration
         project.ext.originalFileContents.clear()
     }
 }
 
-
-
-// Task to apply version-specific overrides
 task applyVersionSpecificOverrides {
-
-    
     def mainSourceDir = file("src/main/java")
     def versionSpecificDir = file("src/version_specific/${targetVersion}/java")
-	def backupDir = file("backup_scr/src_backup_${new Date().format('yyyyMMdd_HHmmss')}")
-    
-    
+def backupDir = file("backup_scr/src_backup_${new Date().format('yyyyMMdd_HHmmss')}")
+   
     onlyIf { versionSpecificDir.exists() }
-    
+   
     doFirst {
-        // Ensure we restore any previously overridden files first
         restoreFiles()
-        
         println "Applying version-specific overrides for Minecraft ${targetVersion}"
-        
-        // Find all Java files in the version-specific directory and its subdirectories
-        def versionSpecificFiles = fileTree(versionSpecificDir).matching {
-            include "**/*.java"
-        }
-        
-        // For each version-specific file, override the corresponding main source file
+        def versionSpecificFiles = fileTree(versionSpecificDir).matching { include "**/*.java" }
         versionSpecificFiles.each { versionFile ->
-            // Get the file path relative to the version-specific java directory
             def relativePath = versionFile.path.substring(versionSpecificDir.path.length())
             def targetFile = new File(mainSourceDir, relativePath)
-            
-            // If target file exists, backup its content and replace with version-specific content
             if (targetFile.exists()) {
                 println "Overriding: ${relativePath}"
                 project.ext.originalFileContents[targetFile.path] = targetFile.text
-				
-				// Create physical backup copy
-				def backupFile = new File(backupDir, relativePath)
+def backupFile = new File(backupDir, relativePath)
                 backupFile.parentFile.mkdirs()
-                backupFile.text = targetFile.text	
-				
+                backupFile.text = targetFile.text
                 targetFile.text = versionFile.text
             } else {
                 println "Target file doesn't exist, creating: ${relativePath}"
-                targetFile.parentFile.mkdirs() // Create parent directories if they don't exist
-                project.ext.originalFileContents[targetFile.path] = null // Mark as a new file
+                targetFile.parentFile.mkdirs()
+                project.ext.originalFileContents[targetFile.path] = null
                 targetFile.text = versionFile.text
             }
         }
     }
 }
 
-
 tasks.named('compileJava').configure {
-	dependsOn(editFabricModJson)
+dependsOn(editFabricModJson)
     dependsOn(applyVersionSpecificOverrides)
 }
 
+// After the build finishes, always restore the workspace to the latest stable version
 gradle.buildFinished { result ->
-	println "\n#######################################################"
-	println "#################### TASK COMPLETE ####################"
-	println "#######################################################\n"
-	
+println "\n#######################################################"
+println "#################### TASK COMPLETE ####################"
+println "#######################################################\n"
     restoreFiles()
-	updateFabricModJson(primaryVersion)
+updateFabricModJson(latestStableVersion)
 }
 
-
 task editFabricModJson {
-	doFirst {
-    updateFabricModJson(targetVersion)
-	}
+doFirst {
+        updateFabricModJson(targetVersion)
+}
 }
 
 def updateFabricModJson(String version) {
     def fabricModFile = file('src/main/resources/fabric.mod.json')
     def jsonSlurper = new JsonSlurper()
     def fabricMod = jsonSlurper.parse(fabricModFile)
-    
+   
     if (!versionMappings.containsKey(version)) {
-        throw new GradleException("\nUnsupported Minecraft version: ${version}\n")
+        throw new GradleException("\nUnsupported or non-stable Minecraft version: ${version}\nAvailable stable versions: ${versionMappings.keySet().join(', ')}\n")
     }
    
-    
-    // Update mod metadata
     fabricMod.version = project.version
     fabricMod.depends = fabricMod.depends ?: [:]
     fabricMod.depends.minecraft = "~${version}"
-    fabricMod.depends["fabric-api"] = ">=${versionMappings[version].fabricApi}"
-    
-    // Write changes with pretty print
+    fabricMod.depends["fabric-api"] = ">=${versionMappings[version].fabricApi.split(':')[2]}"
+   
     fabricModFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(fabricMod))
-	
-	if (version == primaryVersion){
-	println "\nSuccessfully set fabric.mod.json to Minecraft primaryVersion ${version}\n"
-	}
-	else {
-    println "\nSuccessfully updated fabric.mod.json to Minecraft temporary version ${version}\n"
-	}
+
+if (version == latestStableVersion){
+   println "\nSuccessfully set fabric.mod.json to latest stable version ${version}\n"
+}
+else {
+        println "\nSuccessfully updated fabric.mod.json for temporary build target ${version}\n"
+}
 }
 
-// Rename the output JAR to include the Minecraft version
 tasks.named("remapJar") {
-	archiveBaseName = 'inventoryextended'
+archiveBaseName = 'inventoryextended'
     archiveClassifier = "mc${targetVersion}"
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${targetVersion}"
-    mappings versionMappings[targetVersion].yarn
-    modImplementation "net.fabricmc:fabric-loader:${versionMappings[targetVersion].loader}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${versionMappings[targetVersion].fabricApi}"
+    
+    def currentMappings = versionMappings[targetVersion]
+    if (currentMappings == null) {
+        throw new GradleException("No mappings found for Minecraft version ${targetVersion}. Check your version_mappings.json or run the updateVersionMappings task.")
+    }
+
+    mappings currentMappings.yarn
+    modImplementation currentMappings.loader
+    modImplementation currentMappings.fabricApi
+    
+	
 }

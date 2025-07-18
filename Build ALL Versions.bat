@@ -13,6 +13,16 @@ echo Starting build for Minecraft 1.21.6...
 call gradlew build -PtargetVersion=1.21.6
 if errorlevel 1 goto error
 
+echo.
+echo Starting build for Minecraft 1.21.7...
+call gradlew build -PtargetVersion=1.21.7
+if errorlevel 1 goto error
+
+echo.
+echo Starting build for Minecraft 1.21.8...
+call gradlew build -PtargetVersion=1.21.8
+if errorlevel 1 goto error
+
 
 echo.
 echo All builds completed successfully!
