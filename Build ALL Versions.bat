@@ -2,12 +2,6 @@
 echo Building mod for all Minecraft versions...
 ::call gradlew clean
 
-
-echo.
-echo Starting build for Minecraft 1.21.5...
-call gradlew build -PtargetVersion=1.21.5
-if errorlevel 1 goto error
-
 echo.
 echo Starting build for Minecraft 1.21.6...
 call gradlew build -PtargetVersion=1.21.6
