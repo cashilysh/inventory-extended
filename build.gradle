@@ -7,7 +7,6 @@ version = '1.0.0'
 group = 'inventoryextended'
 
 
-// This task handles downloading the version data from the API
 task updateVersionMappings {
     description = "Downloads the latest version mappings from the Linkie API."
     doLast {
@@ -38,16 +37,26 @@ repositories {
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
-/**
- * Loads and transforms version mappings from the local JSON file.
- * It now also automatically determines the latest stable Minecraft version
- * and sets it as the latestStableVersion for the project.
- */
 def loadVersionMappings() {
     def mappingsFile = file('version_mappings.json')
     if (!mappingsFile.exists()) {
         // Instruct the user to run the new task if the file is missing
-        throw new GradleException("Version mappings file not found. Please run the 'updateVersionMappings' task first.")
+        println "Version mappings file not found. Downloading it..."
+		
+		
+		def apiUrl = "https://linkieapi.shedaniel.me/api/versions/all"
+       
+        println "Fetching latest version mappings from ${apiUrl}..."
+        try {
+            // Connect to the URL and get the text content
+            def jsonText = new URL(apiUrl).text
+            // Save the downloaded content to the local file
+            mappingsFile.text = jsonText
+            println "Successfully saved latest mappings to ${mappingsFile.path}"
+        } catch (Exception e) {
+            throw new GradleException("Failed to download version mappings: ${e.message}")
+        }
+		
     }
     
     def slurper = new JsonSlurper()
