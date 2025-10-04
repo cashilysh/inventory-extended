@@ -1,4 +1,6 @@
 @echo off
+for %%A in ("%~dp0.") do set "FolderName=%%~nA"
+title %FolderName%
 
 echo.
 echo Starting clean build...

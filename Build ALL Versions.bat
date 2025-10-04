@@ -1,4 +1,7 @@
 @echo off
+for %%A in ("%~dp0.") do set "FolderName=%%~nA"
+title %FolderName%
+
 echo Building mod for all Minecraft versions...
 ::call gradlew clean
 
@@ -15,6 +18,11 @@ if errorlevel 1 goto error
 echo.
 echo Starting build for Minecraft 1.21.8...
 call gradlew build -PtargetVersion=1.21.8
+if errorlevel 1 goto error
+
+echo.
+echo Starting build for Minecraft 1.21.9...
+call gradlew build -PtargetVersion=1.21.9
 if errorlevel 1 goto error
 
 
