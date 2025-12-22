@@ -30,6 +30,10 @@ echo Starting build for Minecraft 1.21.10...
 call gradlew build -PtargetVersion=1.21.10
 if errorlevel 1 goto error
 
+echo.
+echo Starting build for Minecraft 1.21.11...
+call gradlew build -PtargetVersion=1.21.11
+if errorlevel 1 goto error
 
 echo.
 echo All builds completed successfully!
