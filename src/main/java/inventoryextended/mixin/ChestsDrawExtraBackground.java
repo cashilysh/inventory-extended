@@ -1,43 +1,42 @@
 package inventoryextended.mixin;
 
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ChestMenu;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
-//@Environment(EnvType.CLIENT)
-@Mixin(GenericContainerScreen.class)
-public abstract class ChestsDrawExtraBackground extends HandledScreen<GenericContainerScreenHandler> {
-	
-    @Shadow private int rows;
-    
-    private static final Identifier INVTEXTURE = Identifier.ofVanilla("textures/gui/container/inventory.png");
+@Mixin(ContainerScreen.class)
+public abstract class ChestsDrawExtraBackground extends AbstractContainerScreen<ChestMenu> {
 
-    public ChestsDrawExtraBackground(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title) {
+    @Shadow
+    private int containerRows;
+
+    private static final Identifier INVTEXTURE = Identifier.withDefaultNamespace("textures/gui/container/inventory.png");
+
+    public ChestsDrawExtraBackground(ChestMenu handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
     }
-	
-	
-	@Inject(method = "<init>", at = @At("RETURN"))
-    private void onInit(CallbackInfo ci) {
-        this.backgroundHeight += 58; // Adding 3 more rows (18px each) needed otherwise items will drop out of inventory
-    }
-	
 
-    @Inject(method = "drawBackground", at = @At("RETURN"))
-    protected void drawBackground(DrawContext context, float deltaTicks, int mouseX, int mouseY, CallbackInfo ci) {
-        int i = (this.width - this.backgroundWidth) / 2;
-        int j = (this.height - this.backgroundHeight) / 2;
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, INVTEXTURE, i, j + this.rows * 18 + 73, 0.0F, 126.0F, this.backgroundWidth, 96, 256, 256);
+    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;<init>(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/network/chat/Component;II)V"), index = 4)
+    private int modifyImageHeight(int originalHeight) {
+        return originalHeight + 58; // Adding 3 more rows (18px each) + some extra padding
     }
-	
+
+    @Inject(method = "renderBg", at = @At("RETURN"))
+    protected void drawBackground(GuiGraphicsExtractor context, float deltaTicks, int mouseX, int mouseY, CallbackInfo ci) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        context.blit(RenderPipelines.GUI_TEXTURED, INVTEXTURE, i, j + this.containerRows * 18 + 73, 0.0F, 126.0F, this.imageWidth, 96, 256, 256);
+    }
 }

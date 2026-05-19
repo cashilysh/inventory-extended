@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "inventoryextended",
-    "version": "1.0.0",
+    "version": "1.0.8",
     "name": "Inventory: Extended",
     "description": "Doubles the player's main inventory size",
     "authors": [
@@ -22,8 +22,8 @@
     ],
     "depends": {
         "fabricloader": ">=0.14.21",
-        "minecraft": "~1.21.11",
+        "minecraft": "~26.1.2",
         "java": ">=17",
-        "fabric-api": ">=0.141.1+1.21.11"
+        "fabric-api": ">=0.149.1"
     }
 }

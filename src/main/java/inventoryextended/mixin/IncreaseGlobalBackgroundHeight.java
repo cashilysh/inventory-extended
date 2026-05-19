@@ -1,8 +1,6 @@
 package inventoryextended.mixin;
 
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-
-
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
@@ -12,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @SuppressWarnings({"overwrite", "MissingJavadoc"})
 //@Environment(EnvType.CLIENT)
-@Mixin(HandledScreen.class)
+@Mixin(AbstractContainerScreen.class)
 public abstract class IncreaseGlobalBackgroundHeight {
 	
 	@ModifyConstant(method = "*", constant = @Constant(intValue = 166), require = 1)

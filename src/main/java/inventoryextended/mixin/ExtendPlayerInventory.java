@@ -1,7 +1,7 @@
 package inventoryextended.mixin;
 
 
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.world.entity.player.Inventory;
 import org.spongepowered.asm.mixin.*;
 
 import org.spongepowered.asm.mixin.injection.Constant;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 
 @SuppressWarnings({"overwrite", "MissingJavadoc"})
-@Mixin(PlayerInventory.class)
+@Mixin(Inventory.class)
 //@Environment(EnvType.CLIENT)
 public abstract class ExtendPlayerInventory {
 	

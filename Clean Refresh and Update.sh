@@ -16,8 +16,5 @@ rm -rf "backup_scr"
 echo "Cleaning gradlew..."
 ./gradlew clean
 
-echo "Updating version mappings..."
-./gradlew updateversionmappings
-
 echo "Updating dependencies..."
 ./gradlew --refresh-dependencies

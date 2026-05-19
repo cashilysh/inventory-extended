@@ -1,44 +1,17 @@
 plugins {
-    id 'fabric-loom' version '1.15-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
     id 'maven-publish'
 }
 
-// --- JAVA VERSION CHECK START ---
 def currentJava = JavaVersion.current()
-
-println ""
-println "#######################################################"
-println "Build running on Java version: ${currentJava}"
-println "#######################################################"
-println ""
-
-if (currentJava != JavaVersion.VERSION_21) {
-    throw new GradleException("Java 21 is required to build this project. You are currently using Java ${currentJava}.")
+if (currentJava != JavaVersion.VERSION_25) {
+    throw new GradleException("Java 25 is required. You are using Java ${currentJava}.")
 }
-// --- JAVA VERSION CHECK END -
 
-version = '1.0.0'
+version = '1.0.8'
 group = 'inventoryextended'
 
-
-task updateVersionMappings {
-    description = "Downloads the latest version mappings from the Linkie API."
-    doLast {
-        def apiUrl = "https://linkieapi.shedaniel.me/api/versions/all"
-        def mappingsFile = file('version_mappings.json')
-       
-        println "Fetching latest version mappings from ${apiUrl}..."
-        try {
-            // Connect to the URL and get the text content
-            def jsonText = new URL(apiUrl).text
-            // Save the downloaded content to the local file
-            mappingsFile.text = jsonText
-            println "Successfully saved latest mappings to ${mappingsFile.path}"
-        } catch (Exception e) {
-            throw new GradleException("Failed to download version mappings: ${e.message}")
-        }
-    }
-}
+def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : '26.1.2'
 
 repositories {
     mavenCentral()
@@ -46,202 +19,267 @@ repositories {
     maven { name = "TerraformersMC"; url = "https://maven.terraformersmc.com/" }
     maven { name = "Shedaniel"; url = "https://maven.shedaniel.me/" }
     maven { url = "https://maven.architectury.dev/" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter { includeGroup "maven.modrinth" }
+    }
 }
 
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
-def loadVersionMappings() {
-    def mappingsFile = file('version_mappings.json')
-    if (!mappingsFile.exists()) {
-        // Instruct the user to run the new task if the file is missing
-        println "Version mappings file not found. Downloading it..."
-		
-		
-		def apiUrl = "https://linkieapi.shedaniel.me/api/versions/all"
-       
-        println "Fetching latest version mappings from ${apiUrl}..."
-        try {
-            // Connect to the URL and get the text content
-            def jsonText = new URL(apiUrl).text
-            // Save the downloaded content to the local file
-            mappingsFile.text = jsonText
-            println "Successfully saved latest mappings to ${mappingsFile.path}"
-        } catch (Exception e) {
-            throw new GradleException("Failed to download version mappings: ${e.message}")
-        }
-		
-    }
-    
-    def slurper = new JsonSlurper()
-    def mappingsData = slurper.parseText(mappingsFile.text)
-    
-    def newVersionMappings = [:]
-    String detectedLatestStableVersion = null // Variable to hold the latest version
+// ---------------------------------------------------------------------------
+// VERSION RESOLUTION (On-Demand)
+// ---------------------------------------------------------------------------
 
-    // Iterate over the array under the "fabric" key in the JSON
-    mappingsData.fabric.each { versionEntry ->
-        // Only process entries marked as stable to avoid using release candidates
-        if (versionEntry.stable) {
-            def mcVersion = versionEntry.version
-
-            // The API returns versions newest-first, so the first stable one we find is the latest.
-            if (detectedLatestStableVersion == null) {
-                detectedLatestStableVersion = mcVersion
-            }
-
-            def versionDetails = [:]
-            versionEntry.blocks.each { blockName, blockDetails ->
-                if (blockDetails.dependencies) {
-                    blockDetails.dependencies.each { dep ->
-                        switch (dep.name) {
-                            case "Yarn": versionDetails.yarn = dep.notation; break
-                            case "Fabric Loader": versionDetails.loader = dep.notation; break
-                            case "Fabric API": versionDetails.fabricApi = dep.notation; break
-                            case "Cloth Config": versionDetails.clothConfig = dep.notation; break
-                            case "Mod Menu": versionDetails.modMenu = dep.notation; break
-                        }
-                    }
-                }
-            }
-            newVersionMappings[mcVersion] = versionDetails
-        }
-    }
-
-    ext.versionMappings = newVersionMappings
-
-    // Dynamically set the latest stable version found
-    if (detectedLatestStableVersion != null) {
-        ext.latestStableVersion = detectedLatestStableVersion
-    } else {
-        throw new GradleException("Could not determine the latest stable version from version_mappings.json.")
+def fetchJson(String url) {
+    try {
+        return new JsonSlurper().parse(new URL(url))
+    } catch (Exception e) {
+        println ">> WARNING: Failed to fetch ${url}: ${e.message}"
+        return null
     }
 }
 
-// Load the version mappings using the updated function
-loadVersionMappings()
+def resolveVersions(String gameVersion) {
+    def result = [:]
+    def fabricMetaUrl = "https://meta.fabricmc.net/v2"
+    def modrinthApiUrl = "https://api.modrinth.com/v2"
 
-// This variable now holds the default build version, which is the latest stable one.
-// It can be overridden from the command line (e.g., -PtargetVersion=1.20.6)
-def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : latestStableVersion
+    // Fabric Loader (game-version-independent)
+    def loaderData = fetchJson("${fabricMetaUrl}/versions/loader")
+    if (loaderData) {
+        def stable = loaderData.find { it.stable }
+        if (stable) result.loader = stable.version
+    }
 
-afterEvaluate {
-    println "Automatically set latest stable version to: ${latestStableVersion}"
-    println "Loaded version_mappings for ${versionMappings.size()} Minecraft versions (${versionMappings.keySet().join(', ')})"
-    println "Current build target is: ${targetVersion}"
+    // Modrinth Artifacts
+    def gv  = URLEncoder.encode("[\"${gameVersion}\"]", "UTF-8")
+    def ldr = URLEncoder.encode("[\"fabric\"]",          "UTF-8")
+
+    [
+        fabricApi  : "fabric-api",
+        modMenu    : "modmenu",
+        clothConfig: "cloth-config"
+    ].each { key, slug ->
+        def data = fetchJson("${modrinthApiUrl}/project/${slug}/version?game_versions=${gv}&loaders=${ldr}")
+        if (data && !data.isEmpty()) {
+            def latest = data.find { it.version_type == "release" } ?: data[0]
+            result[key] = latest.version_number
+        }
+    }
+
+    return result
 }
 
+def loadVersionMappings(String target) {
+    def cacheFile = file('version_mappings.json')
+    def slurper   = new JsonSlurper()
+    def cached    = [:]
 
-// --- The rest of the script remains largely the same ---
+    if (cacheFile.exists()) {
+        try { cached = slurper.parseText(cacheFile.text) }
+        catch (Exception e) { println ">> WARNING: Could not parse version_mappings.json, rebuilding cache." }
+    }
+
+    if (!cached.containsKey(target)) {
+        println ">> Resolving API dependencies for Minecraft ${target}..."
+        def resolved = resolveVersions(target)
+
+        if (resolved && !resolved.isEmpty()) {
+            cached[target] = resolved
+            try {
+                cacheFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(cached))
+                println ">> Saved dependencies to version_mappings.json"
+            }
+            catch (Exception e) { println ">> WARNING: Could not write cache file: ${e.message}" }
+        } else {
+            throw new GradleException("Failed to resolve dependencies from APIs for Minecraft ${target}.")
+        }
+    }
+
+    ext.versionMappings = cached
+}
+
+loadVersionMappings(targetVersion)
+
+// ---------------------------------------------------------------------------
+// VERSION COMPARISON
+// ---------------------------------------------------------------------------
+
+def compareVersions(String v1, String v2) {
+    def parts1 = v1.split('\\.').collect { it.isInteger() ? it.toInteger() : 0 }
+    def parts2 = v2.split('\\.').collect { it.isInteger() ? it.toInteger() : 0 }
+    int length = Math.max(parts1.size(), parts2.size())
+    for (int i = 0; i < length; i++) {
+        int p1 = i < parts1.size() ? parts1[i] : 0
+        int p2 = i < parts2.size() ? parts2[i] : 0
+        if (p1 != p2) return p1 <=> p2
+    }
+    return 0
+}
+
+def isVersionInRange(String target, String rangeFolderName) {
+    if (!rangeFolderName.contains('_')) return false
+    def parts = rangeFolderName.split('_')
+    if (parts.size() != 2) return false
+    def minCheck = compareVersions(parts[0], target) <= 0
+    def maxCheck = compareVersions(target, parts[1]) <= 0
+    return minCheck && maxCheck
+}
+
+// ---------------------------------------------------------------------------
+// FILE RESTORE LOGIC
+// ---------------------------------------------------------------------------
 
 ext.originalFileContents = [:]
 
 def restoreFiles() {
-    if (project.ext.originalFileContents && !project.ext.originalFileContents.isEmpty()) {
-        println "Restoring individually modified files"
+    if (project.ext.originalFileContents) {
         project.ext.originalFileContents.each { filePath, content ->
             def file = new File(filePath)
-            if (content == null) {
-                file.delete()
-            } else {
-                file.text = content
-            }
+            if (content == null) file.delete()
+            else file.text = content
         }
         project.ext.originalFileContents.clear()
     }
 }
 
+def overrideFile(File mainSourceDir, File sourceFile, String relativePath) {
+    def targetFile = new File(mainSourceDir, relativePath)
+    if (project.ext.originalFileContents == null) project.ext.originalFileContents = [:]
+    if (!project.ext.originalFileContents.containsKey(targetFile.path)) {
+        project.ext.originalFileContents[targetFile.path] = targetFile.exists() ? targetFile.text : null
+        if (!targetFile.exists()) targetFile.parentFile.mkdirs()
+    }
+    targetFile.text = sourceFile.text
+}
+
+// ---------------------------------------------------------------------------
+// VERSION-SPECIFIC OVERRIDES
+// ---------------------------------------------------------------------------
+
 task applyVersionSpecificOverrides {
-    def mainSourceDir = file("src/main/java")
-    def versionSpecificDir = file("src/version_specific/${targetVersion}/java")
-def backupDir = file("backup_scr/src_backup_${new Date().format('yyyyMMdd_HHmmss')}")
-   
-    onlyIf { versionSpecificDir.exists() }
-   
+    def mainSourceDir    = file("src/main/java")
+    def versionSpecificRoot = file("src/version_specific")
+
     doFirst {
         restoreFiles()
-        println "Applying version-specific overrides for Minecraft ${targetVersion}"
-        def versionSpecificFiles = fileTree(versionSpecificDir).matching { include "**/*.java" }
-        versionSpecificFiles.each { versionFile ->
-            def relativePath = versionFile.path.substring(versionSpecificDir.path.length())
-            def targetFile = new File(mainSourceDir, relativePath)
-            if (targetFile.exists()) {
-                println "Overriding: ${relativePath}"
-                project.ext.originalFileContents[targetFile.path] = targetFile.text
-def backupFile = new File(backupDir, relativePath)
-                backupFile.parentFile.mkdirs()
-                backupFile.text = targetFile.text
-                targetFile.text = versionFile.text
-            } else {
-                println "Target file doesn't exist, creating: ${relativePath}"
-                targetFile.parentFile.mkdirs()
-                project.ext.originalFileContents[targetFile.path] = null
-                targetFile.text = versionFile.text
+
+        if (!versionSpecificRoot.exists()) {
+            return
+        }
+
+        def dirsToApply = []
+
+        versionSpecificRoot.listFiles().each { dir ->
+            if (dir.isDirectory() && dir.name.contains('_') && isVersionInRange(targetVersion, dir.name)) {
+                dirsToApply.add([dir: dir, type: "RANGE MATCH"])
             }
+        }
+
+        def exactDir = new File(versionSpecificRoot, targetVersion)
+        if (exactDir.exists()) {
+            dirsToApply.add([dir: exactDir, type: "EXACT MATCH"])
+        }
+
+        if (!dirsToApply.isEmpty()) {
+            println "\n--- APPLYING OVERRIDES FOR ${targetVersion} ---"
+            dirsToApply.each { entry ->
+                def dir  = entry.dir
+                def type = entry.type
+                println ">> ${type}: ${dir.name}"
+                def sourceRoot = new File(dir, "java").exists() ? new File(dir, "java") : dir
+                fileTree(sourceRoot).matching { include "**/*.java" }.each { f ->
+                    def relativePath = f.path.substring(sourceRoot.path.length())
+                    if (relativePath.startsWith("/") || relativePath.startsWith("\\")) {
+                        relativePath = relativePath.substring(1)
+                    }
+                    println "   Overriding: ${relativePath}"
+                    overrideFile(mainSourceDir, f, relativePath)
+                }
+            }
+            println "--------------------------------------------\n"
         }
     }
 }
 
+// ---------------------------------------------------------------------------
+// TASKS & COMPILE SETTINGS
+// ---------------------------------------------------------------------------
+
 tasks.named('compileJava').configure {
-dependsOn(editFabricModJson)
+    dependsOn(editFabricModJson)
     dependsOn(applyVersionSpecificOverrides)
 }
 
-// After the build finishes, always restore the workspace to the latest stable version
-gradle.buildFinished { result ->
-println "\n#######################################################"
-println "#################### TASK COMPLETE ####################"
-println "#######################################################\n"
+gradle.buildFinished {
     restoreFiles()
-updateFabricModJson(latestStableVersion)
+    updateFabricModJson(targetVersion)
+}
+
+jar {
+    archiveBaseName = 'inventoryextended'
+    archiveClassifier = "mc${targetVersion}"
+
+    from("LICENSE") {
+        rename { "${it}_${project.name}" }
+    }
 }
 
 task editFabricModJson {
-doFirst {
-        updateFabricModJson(targetVersion)
-}
+    doFirst { updateFabricModJson(targetVersion) }
 }
 
 def updateFabricModJson(String version) {
-    def fabricModFile = file('src/main/resources/fabric.mod.json')
-    def jsonSlurper = new JsonSlurper()
-    def fabricMod = jsonSlurper.parse(fabricModFile)
-   
-    if (!versionMappings.containsKey(version)) {
-        throw new GradleException("\nUnsupported or non-stable Minecraft version: ${version}\nAvailable stable versions: ${versionMappings.keySet().join(', ')}\n")
+    def f = file('src/main/resources/fabric.mod.json')
+    if (!versionMappings.containsKey(version)) return
+
+    def json = new JsonSlurper().parse(f)
+    json.version  = project.version
+    json.depends  = json.depends ?: [:]
+
+    def map = versionMappings[version]
+
+    json.depends.minecraft = "~${version}"
+
+    if (map?.fabricApi) {
+        def semver = map.fabricApi.split('\\+')[0]
+        json.depends["fabric-api"] = ">=${semver}"
     }
-   
-    fabricMod.version = project.version
-    fabricMod.depends = fabricMod.depends ?: [:]
-    fabricMod.depends.minecraft = "~${version}"
-    fabricMod.depends["fabric-api"] = ">=${versionMappings[version].fabricApi.split(':')[2]}"
-   
-    fabricModFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(fabricMod))
 
-if (version == latestStableVersion){
-   println "\nSuccessfully set fabric.mod.json to latest stable version ${version}\n"
-}
-else {
-        println "\nSuccessfully updated fabric.mod.json for temporary build target ${version}\n"
-}
+    f.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
 }
 
-tasks.named("remapJar") {
-archiveBaseName = 'inventoryextended'
-    archiveClassifier = "mc${targetVersion}"
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
 }
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+
+// ---------------------------------------------------------------------------
+// DEPENDENCIES
+// Notice: modImplementation is replaced by standard implementation for 26.x
+// ---------------------------------------------------------------------------
 
 dependencies {
     minecraft "com.mojang:minecraft:${targetVersion}"
-    
-    def currentMappings = versionMappings[targetVersion]
-    if (currentMappings == null) {
-        throw new GradleException("No mappings found for Minecraft version ${targetVersion}. Check your version_mappings.json or run the updateVersionMappings task.")
-    }
 
-    mappings currentMappings.yarn
-    modImplementation currentMappings.loader
-    modImplementation currentMappings.fabricApi
-    
-	
+    def map = versionMappings[targetVersion]
+    if (map) {
+        if (map.loader)      implementation "net.fabricmc:fabric-loader:${map.loader}"
+        if (map.fabricApi)   implementation "maven.modrinth:fabric-api:${map.fabricApi}"
+        if (map.modMenu)     implementation "maven.modrinth:modmenu:${map.modMenu}"
+        if (map.clothConfig) implementation "maven.modrinth:cloth-config:${map.clothConfig}"
+    }
 }

@@ -1,34 +1,27 @@
 package inventoryextended.mixin;
 
-import net.minecraft.client.gui.screen.ingame.HopperScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.screen.HopperScreenHandler;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.HopperScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.HopperMenu;
 
-//@Environment(EnvType.CLIENT)
 @Mixin(HopperScreen.class)
-public abstract class HopperDrawExtraBackground extends HandledScreen<HopperScreenHandler> {
+public abstract class HopperDrawExtraBackground extends AbstractContainerScreen<HopperMenu> {
 
-    
-    private static final Identifier INVTEXTURE = Identifier.ofVanilla("textures/gui/container/beacon.png");
+    private static final Identifier INVTEXTURE = Identifier.withDefaultNamespace("textures/gui/container/beacon.png");
 
-    public HopperDrawExtraBackground(HopperScreenHandler handler, PlayerInventory inventory, Text title) {
+    public HopperDrawExtraBackground(HopperMenu handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
     }
-	
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-    private void onInit(CallbackInfo ci) {
-        this.backgroundHeight += 52; // Adding 3 more rows (18px each) needed otherwise items will drop out of inventory
+    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;<init>(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/network/chat/Component;II)V"), index = 4)
+    private int modifyImageHeight(int originalHeight) {
+        return originalHeight + 52; // Change 133 to 185
     }
-
-	
 }

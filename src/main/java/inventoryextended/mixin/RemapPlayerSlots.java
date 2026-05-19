@@ -1,7 +1,6 @@
 package inventoryextended.mixin;
 
-import net.minecraft.screen.PlayerScreenHandler;
-
+import net.minecraft.world.inventory.InventoryMenu;
 import org.spongepowered.asm.mixin.Mixin;
 
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
@@ -12,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.Constant;
 
 @SuppressWarnings({"overwrite", "MissingJavadoc"})
 //@Environment(EnvType.CLIENT)
-@Mixin(PlayerScreenHandler.class)
+@Mixin(InventoryMenu.class)
 public abstract class RemapPlayerSlots {
 
 	  @ModifyConstant(
-    method = {"<clinit>", "isInHotbar", "quickMove"}, // Correct array syntax
+    method = {"<clinit>", "isHotbarSlot", "quickMoveStack"}, // Correct array syntax
         constant = @Constant(intValue = 36),
         require = 1
     )
@@ -26,7 +25,7 @@ public abstract class RemapPlayerSlots {
 
     // Change 45 → 72 in all methods
     @ModifyConstant(
-    method = {"<clinit>", "isInHotbar", "quickMove"}, // Correct array syntax
+    method = {"<clinit>", "isHotbarSlot", "quickMoveStack"}, // Correct array syntax
         constant = @Constant(intValue = 45),
         require = 1
     )
@@ -36,7 +35,7 @@ public abstract class RemapPlayerSlots {
 	
 	// Change 46 → 73 in all methods
 	    @ModifyConstant(
-    method = {"<clinit>", "isInHotbar", "quickMove"}, // Correct array syntax
+    method = {"<clinit>", "isHotbarSlot", "quickMoveStack"}, // Correct array syntax
         constant = @Constant(intValue = 46),
         require = 1
     )

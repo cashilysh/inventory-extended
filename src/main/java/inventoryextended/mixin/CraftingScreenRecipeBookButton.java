@@ -1,7 +1,7 @@
 package inventoryextended.mixin;
 
 
-import net.minecraft.client.gui.screen.ingame.CraftingScreen;
+import net.minecraft.client.gui.screens.inventory.CraftingScreen;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 public abstract class CraftingScreenRecipeBookButton {
 	
 	//change Y-level of Recipe Book in the Crafting Block Screen menu
-	@ModifyConstant(method = "getRecipeBookButtonPos", constant = @Constant(intValue = 49), require = 1)
+	@ModifyConstant(method = "getRecipeBookButtonPosition", constant = @Constant(intValue = 49), require = 1)
 	private static int recipeBookButtonYmod(int recipeBookButtonY) {
     return recipeBookButtonY + 30;
 	}

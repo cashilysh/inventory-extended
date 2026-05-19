@@ -1,11 +1,8 @@
 package inventoryextended.mixin;
 
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @SuppressWarnings({"overwrite", "MissingJavadoc"})
 //@Environment(EnvType.CLIENT)
-@Mixin(ScreenHandler.class)
+@Mixin(AbstractContainerMenu.class)
 public abstract class GlobalDrawExtraSlots {
 	
 	@Shadow
@@ -31,7 +28,7 @@ public abstract class GlobalDrawExtraSlots {
 	*/
 	//Draw 3 more rows of inventory slots
     @ModifyConstant(
-        method = "addPlayerInventorySlots",
+        method = "addInventoryExtendedSlots",
         constant = @Constant(intValue = 3)
     )
     private int modifyInventoryRows(int original) {
@@ -42,7 +39,7 @@ public abstract class GlobalDrawExtraSlots {
 	
 	//Hotbar Y-Offset
 	 @ModifyConstant(
-        method = "addPlayerSlots",
+        method = "addStandardInventorySlots",
         constant = @Constant(intValue = 58)
     )
     private static int modifyHotbarOffset(int original) {
