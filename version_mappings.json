@@ -1,8 +1,0 @@
-{
-    "26.1.2": {
-        "loader": "0.19.2",
-        "fabricApi": "0.149.1+26.1.2",
-        "modMenu": "18.0.0-beta.1",
-        "clothConfig": "26.1.154+fabric"
-    }
-}

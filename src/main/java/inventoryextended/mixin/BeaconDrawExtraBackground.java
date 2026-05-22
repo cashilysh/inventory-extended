@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.BeaconMenu;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,14 +24,14 @@ public abstract class BeaconDrawExtraBackground extends AbstractContainerScreen<
     }
 
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;<init>(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/network/chat/Component;II)V"), index = 4)
-    private int modifyImageHeight(int originalHeight) {
+    private static int modifyImageHeight(int originalHeight) {
         return originalHeight + 52; // Change 219 to 271
     }
 
-    @Inject(method = "renderBg", at = @At("RETURN"))
-    protected void drawBackground(GuiGraphicsExtractor context, float deltaTicks, int mouseX, int mouseY, CallbackInfo ci) {
+    @Inject(method = "extractBackground", at = @At("RETURN"))
+    protected void drawBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a, CallbackInfo ci) {
         int i = (this.width - this.imageWidth) / 2;
         int j = (this.height - this.imageHeight) / 2;
-        context.blit(RenderPipelines.GUI_TEXTURED, INVTEXTURE, i, j + 190, 0.0F, 136.0F, this.imageWidth, 83, 256, 256);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, INVTEXTURE, i, j + 190, 0.0F, 136.0F, this.imageWidth, 83, 256, 256);
     }
 }

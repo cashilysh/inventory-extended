@@ -1,29 +1,41 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom'
     id 'maven-publish'
 }
 
+def requiredJava = JavaVersion.toVersion(
+    project.findProperty('javaVersion') ?: '25'
+)
 def currentJava = JavaVersion.current()
-if (currentJava != JavaVersion.VERSION_25) {
-    throw new GradleException("Java 25 is required. You are using Java ${currentJava}.")
+
+    println "\n╔══════════════════════════════════════════════════════════════╗"
+    println "║              Using Java ${currentJava} for current build.                ║"
+    println "╚══════════════════════════════════════════════════════════════╝"
+
+if (currentJava != requiredJava) {
+    throw new GradleException(
+        "Java ${requiredJava} is required. You are using Java ${currentJava}."
+    )
 }
 
-version = '1.0.8'
-group = 'inventoryextended'
-
-def targetVersion = project.hasProperty('targetVersion') ? project.targetVersion : '26.1.2'
+version = project.findProperty('modVersion') ?: '1.0.0'
+group   = project.findProperty('modGroup')   ?: project.name
+def jarName       = project.findProperty('jarName')           ?: project.name
+def targetVersion = project.hasProperty('targetVersion')
+        ? project.targetVersion
+        : project.findProperty('defaultTargetVersion')
 
 repositories {
     mavenCentral()
-    maven { name = "Fabric"; url = "https://maven.fabricmc.net/" }
+    maven { name = "Fabric";         url = "https://maven.fabricmc.net/" }
     maven { name = "TerraformersMC"; url = "https://maven.terraformersmc.com/" }
-    maven { name = "Shedaniel"; url = "https://maven.shedaniel.me/" }
-    maven { url = "https://maven.architectury.dev/" }
+    maven { name = "Shedaniel";      url = "https://maven.shedaniel.me/" }
+    maven {                           url = "https://maven.architectury.dev/" }
     exclusiveContent {
         forRepository {
             maven {
                 name = "Modrinth"
-                url = "https://api.modrinth.com/maven"
+                url  = "https://api.modrinth.com/maven"
             }
         }
         filter { includeGroup "maven.modrinth" }
@@ -34,7 +46,7 @@ import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
 // ---------------------------------------------------------------------------
-// VERSION RESOLUTION (On-Demand)
+// VERSION RESOLUTION (In-Memory Only)
 // ---------------------------------------------------------------------------
 
 def fetchJson(String url) {
@@ -47,66 +59,69 @@ def fetchJson(String url) {
 }
 
 def resolveVersions(String gameVersion) {
-    def result = [:]
-    def fabricMetaUrl = "https://meta.fabricmc.net/v2"
+    def result         = [:]
+    def fabricMetaUrl  = "https://meta.fabricmc.net/v2"
     def modrinthApiUrl = "https://api.modrinth.com/v2"
 
-    // Fabric Loader (game-version-independent)
-    def loaderData = fetchJson("${fabricMetaUrl}/versions/loader")
-    if (loaderData) {
-        def stable = loaderData.find { it.stable }
-        if (stable) result.loader = stable.version
+    println "\n╔══════════════════════════════════════════════════════════════╗"
+    println "║         RESOLVING DEPENDENCIES FOR MINECRAFT ${gameVersion}          ║"
+    println "╚══════════════════════════════════════════════════════════════╝"
+
+    // --- Fabric Loader (always resolved, from Fabric meta) ---
+    println "\n>> Fetching Fabric Loader versions..."
+    def loaderData = fetchJson("${fabricMetaUrl}/versions/loader/${gameVersion}")
+    if (loaderData && !loaderData.isEmpty()) {
+        def entry = loaderData.find { it.loader?.stable } ?: loaderData[0]
+        result['fabric-loader'] = entry.loader.version
+        println "   ✓ fabric-loader: ${result['fabric-loader']}"
+    } else {
+        def fallback = fetchJson("${fabricMetaUrl}/versions/loader")
+        def stable   = fallback?.find { it.stable }
+        if (stable) {
+            result['fabric-loader'] = stable.version
+            println "   ✓ fabric-loader (fallback): ${result['fabric-loader']}"
+        }
     }
 
-    // Modrinth Artifacts
+    // --- All other mods: resolve only what's declared in gradle.properties ---
+    def allDeclaredSlugs = (
+        ((project.findProperty('deps.implementation') ?: '') + ',' +
+         (project.findProperty('deps.compileOnly')    ?: ''))
+        .split(',')
+        .collect  { it.trim() }
+        .findAll  { it && it != 'fabric-loader' }  // fabric-loader handled above
+        .toSet()
+    )
+
+    if (allDeclaredSlugs.isEmpty()) {
+        println "\n>> No additional mod dependencies declared."
+        return result
+    }
+
     def gv  = URLEncoder.encode("[\"${gameVersion}\"]", "UTF-8")
     def ldr = URLEncoder.encode("[\"fabric\"]",          "UTF-8")
 
-    [
-        fabricApi  : "fabric-api",
-        modMenu    : "modmenu",
-        clothConfig: "cloth-config"
-    ].each { key, slug ->
+    allDeclaredSlugs.each { slug ->
+        println "\n>> Fetching ${slug} for MC ${gameVersion}..."
         def data = fetchJson("${modrinthApiUrl}/project/${slug}/version?game_versions=${gv}&loaders=${ldr}")
         if (data && !data.isEmpty()) {
             def latest = data.find { it.version_type == "release" } ?: data[0]
-            result[key] = latest.version_number
+            result[slug] = latest.version_number
+            println "   SUCCESS: ${slug}: ${latest.version_number} (${latest.version_type})"
+        } else {
+            println "   ERROR  :  No compatible version found for ${slug}"
         }
     }
 
     return result
 }
 
-def loadVersionMappings(String target) {
-    def cacheFile = file('version_mappings.json')
-    def slurper   = new JsonSlurper()
-    def cached    = [:]
-
-    if (cacheFile.exists()) {
-        try { cached = slurper.parseText(cacheFile.text) }
-        catch (Exception e) { println ">> WARNING: Could not parse version_mappings.json, rebuilding cache." }
-    }
-
-    if (!cached.containsKey(target)) {
-        println ">> Resolving API dependencies for Minecraft ${target}..."
-        def resolved = resolveVersions(target)
-
-        if (resolved && !resolved.isEmpty()) {
-            cached[target] = resolved
-            try {
-                cacheFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(cached))
-                println ">> Saved dependencies to version_mappings.json"
-            }
-            catch (Exception e) { println ">> WARNING: Could not write cache file: ${e.message}" }
-        } else {
-            throw new GradleException("Failed to resolve dependencies from APIs for Minecraft ${target}.")
-        }
-    }
-
-    ext.versionMappings = cached
+def resolvedVersions = resolveVersions(targetVersion)
+if (!resolvedVersions || resolvedVersions.isEmpty()) {
+    throw new GradleException("Failed to resolve dependencies from APIs for Minecraft ${targetVersion}.")
 }
 
-loadVersionMappings(targetVersion)
+ext.versionMappings = resolvedVersions
 
 // ---------------------------------------------------------------------------
 // VERSION COMPARISON
@@ -128,9 +143,7 @@ def isVersionInRange(String target, String rangeFolderName) {
     if (!rangeFolderName.contains('_')) return false
     def parts = rangeFolderName.split('_')
     if (parts.size() != 2) return false
-    def minCheck = compareVersions(parts[0], target) <= 0
-    def maxCheck = compareVersions(target, parts[1]) <= 0
-    return minCheck && maxCheck
+    return compareVersions(parts[0], target) <= 0 && compareVersions(target, parts[1]) <= 0
 }
 
 // ---------------------------------------------------------------------------
@@ -165,34 +178,30 @@ def overrideFile(File mainSourceDir, File sourceFile, String relativePath) {
 // ---------------------------------------------------------------------------
 
 task applyVersionSpecificOverrides {
-    def mainSourceDir    = file("src/main/java")
+    def mainSourceDir       = file("src/main/java")
     def versionSpecificRoot = file("src/version_specific")
 
     doFirst {
         restoreFiles()
-
-        if (!versionSpecificRoot.exists()) {
-            return
-        }
+        if (!versionSpecificRoot.exists()) return
 
         def dirsToApply = []
 
         versionSpecificRoot.listFiles().each { dir ->
             if (dir.isDirectory() && dir.name.contains('_') && isVersionInRange(targetVersion, dir.name)) {
-                dirsToApply.add([dir: dir, type: "RANGE MATCH"])
+                dirsToApply << [dir: dir, type: "RANGE MATCH"]
             }
         }
-
         def exactDir = new File(versionSpecificRoot, targetVersion)
         if (exactDir.exists()) {
-            dirsToApply.add([dir: exactDir, type: "EXACT MATCH"])
+            dirsToApply << [dir: exactDir, type: "EXACT MATCH"]
         }
 
         if (!dirsToApply.isEmpty()) {
             println "\n--- APPLYING OVERRIDES FOR ${targetVersion} ---"
             dirsToApply.each { entry ->
-                def dir  = entry.dir
-                def type = entry.type
+                def dir        = entry.dir
+                def type       = entry.type
                 println ">> ${type}: ${dir.name}"
                 def sourceRoot = new File(dir, "java").exists() ? new File(dir, "java") : dir
                 fileTree(sourceRoot).matching { include "**/*.java" }.each { f ->
@@ -214,8 +223,8 @@ task applyVersionSpecificOverrides {
 // ---------------------------------------------------------------------------
 
 tasks.named('compileJava').configure {
-    dependsOn(editFabricModJson)
-    dependsOn(applyVersionSpecificOverrides)
+    dependsOn applyVersionSpecificOverrides
+    dependsOn editFabricModJson
 }
 
 gradle.buildFinished {
@@ -223,12 +232,13 @@ gradle.buildFinished {
     updateFabricModJson(targetVersion)
 }
 
+// MC 26.x is unobfuscated — Loom does not remap, so the output task is 'jar', not 'remapJar'
 jar {
-    archiveBaseName = 'inventoryextended'
+    archiveBaseName   = jarName
     archiveClassifier = "mc${targetVersion}"
 
     from("LICENSE") {
-        rename { "${it}_${project.name}" }
+        rename { "${it}_${jarName}" }
     }
 }
 
@@ -237,14 +247,13 @@ task editFabricModJson {
 }
 
 def updateFabricModJson(String version) {
-    def f = file('src/main/resources/fabric.mod.json')
-    if (!versionMappings.containsKey(version)) return
+    def f   = file('src/main/resources/fabric.mod.json')
+    def map = project.ext.versionMappings
+    if (!map) return
 
-    def json = new JsonSlurper().parse(f)
+    def json      = new JsonSlurper().parse(f)
     json.version  = project.version
     json.depends  = json.depends ?: [:]
-
-    def map = versionMappings[version]
 
     json.depends.minecraft = "~${version}"
 
@@ -257,29 +266,49 @@ def updateFabricModJson(String version) {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 25
+    it.options.release = requiredJava.majorVersion.toInteger()
 }
 
 java {
-    withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    sourceCompatibility = requiredJava
+    targetCompatibility = requiredJava
 }
 
-
-// ---------------------------------------------------------------------------
-// DEPENDENCIES
-// Notice: modImplementation is replaced by standard implementation for 26.x
-// ---------------------------------------------------------------------------
+def resolvedMap = project.ext.versionMappings
 
 dependencies {
+
+    println ""
+    println ""
+
     minecraft "com.mojang:minecraft:${targetVersion}"
 
-    def map = versionMappings[targetVersion]
-    if (map) {
-        if (map.loader)      implementation "net.fabricmc:fabric-loader:${map.loader}"
-        if (map.fabricApi)   implementation "maven.modrinth:fabric-api:${map.fabricApi}"
-        if (map.modMenu)     implementation "maven.modrinth:modmenu:${map.modMenu}"
-        if (map.clothConfig) implementation "maven.modrinth:cloth-config:${map.clothConfig}"
+    if (resolvedMap['fabric-loader']) {
+        println ">> Adding dependency: fabric-loader:${resolvedMap['fabric-loader']}"
+        implementation "net.fabricmc:fabric-loader:${resolvedMap['fabric-loader']}"
+    }
+
+    def implSlugs     = (project.findProperty('deps.implementation') ?: '').split(',').collect { it.trim() }.findAll { it }
+    def compOnlySlugs = (project.findProperty('deps.compileOnly')    ?: '').split(',').collect { it.trim() }.findAll { it }
+
+    implSlugs.each { slug ->
+        if (slug == 'fabric-loader') return
+        def version = resolvedMap[slug]
+        if (!version) { println "   ⚠ No resolved version for ${slug} — skipping"; return }
+        def coords = slug == 'fabric-api'
+            ? "net.fabricmc.fabric-api:fabric-api:${version}"
+            : "maven.modrinth:${slug}:${version}"
+        println ">> Adding implementation dependency: ${coords}"
+        implementation coords
+    }
+
+    compOnlySlugs.each { slug ->
+        def version = resolvedMap[slug]
+        if (!version) { println "   ⚠ No resolved version for ${slug} — skipping"; return }
+        def coords = slug == 'fabric-api'
+            ? "net.fabricmc.fabric-api:fabric-api:${version}"
+            : "maven.modrinth:${slug}:${version}"
+        println ">> Adding compileOnly dependency: ${coords}"
+        compileOnly coords
     }
 }
