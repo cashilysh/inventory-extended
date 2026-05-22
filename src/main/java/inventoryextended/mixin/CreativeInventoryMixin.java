@@ -1,55 +1,109 @@
 package inventoryextended.mixin;
 
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.ItemPickerMenu;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.inventory.ContainerInput;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(CreativeModeInventoryScreen.class)
 public abstract class CreativeInventoryMixin {
 
-    @Inject(method = "slotClicked", at = @At("HEAD"))
-    private void debugMouseClick(Slot slot, int slotId, int buttonNum, ContainerInput containerInput, CallbackInfo ci) {
-        if (slot != null) {
-            System.out.println("Slot clicked: " + slot.index + ", Index: " + slot.getContainerSlot() + ", Type: " + containerInput);
-        }
-    }
-
-    @ModifyConstant(method = "selectTab", constant = @Constant(intValue = 45))
-    private int modify45(int original) {
-        return original + 27;
-    }
-
-    @ModifyConstant(method = "selectTab", constant = @Constant(intValue = 36))
-    private int modify36(int original) {
-        return original + 27;
-    }
-
-    // Creative inventory hot bar Y-Position
-    @ModifyConstant(method = "selectTab", constant = @Constant(intValue = 112))
-    private int modify112(int original) {
-        return original + 60;
-    }
-
-    // Note: "onMouseClick" method doesn't exist in the new version
-    // These might need to be removed or updated to target different methods
     /*
-    @ModifyConstant(method = "onMouseClick", constant = @Constant(intValue = 36))
-    private int modify36again(int original) {
-        return original + 27;
+     * ============================================================
+     * Fix creative hotbar sync
+     * ============================================================
+     */
+
+    @ModifyArg(
+            method = "handleHotbarLoadOrSave",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;handleCreativeModeItemAdd(Lnet/minecraft/world/item/ItemStack;I)V"
+            ),
+            index = 1
+    )
+    private static int inventoryextended$fixCreativeHotbarSync(int slot) {
+        return slot + 27;
     }
 
-    @ModifyConstant(method = "onMouseClick", constant = @Constant(intValue = 45))
-    private int modify45again(int original) {
-        return original + 27;
-    }
-    */
+    /*
+     * ============================================================
+     * Reposition extended inventory slots
+     * ============================================================
+     */
 
-    @ModifyConstant(method = "handleHotbarLoadOrSave", constant = @Constant(intValue = 36))
-    private static int modify36again2(int original) {
-        return original + 27;
+    @Inject(
+            method = "selectTab",
+            at = @At("TAIL")
+    )
+    private void inventoryextended$repositionExtendedSlots(
+            net.minecraft.world.item.CreativeModeTab tab,
+            CallbackInfo ci
+    ) {
+        CreativeModeInventoryScreen self =
+                (CreativeModeInventoryScreen)(Object)this;
+
+        if (!self.isInventoryOpen()) {
+            return;
+        }
+
+        ItemPickerMenu menu = (ItemPickerMenu)self.getMenu();
+
+        for (Slot slot : menu.slots) {
+
+            int i = slot.index;
+
+            SlotAccessor accessor =
+                    (SlotAccessor)(Object)slot;
+
+            /*
+             * Vanilla:
+             *
+             * 0-4   crafting
+             * 5-8   armor
+             * 9-35  inventory
+             * 36-44 hotbar
+             * 45    offhand
+             *
+             * Extended:
+             *
+             * 9-62  inventory
+             * 63-71 hotbar
+             * 72    offhand
+             */
+
+            // Main inventory
+            if (i >= 9 && i < 63) {
+
+                int pos = i - 9;
+
+                int row = pos / 9;
+                int col = pos % 9;
+
+                accessor.setX(9 + col * 18);
+                accessor.setY(54 + row * 18);
+            }
+
+            // Hotbar
+            else if (i >= 63 && i < 72) {
+
+                int col = i - 63;
+
+                accessor.setX(9 + col * 18);
+                accessor.setY(166);
+            }
+
+            // Offhand
+            else if (i == 72) {
+
+                accessor.setX(173);
+                accessor.setY(166);
+            }
+        }
     }
 }

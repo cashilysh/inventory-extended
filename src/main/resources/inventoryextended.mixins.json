@@ -11,12 +11,14 @@
 	"CraftingScreenRecipeBookButton",
 	"FurnaceScreenRecipeBookButton",
 	"IncreaseGlobalBackgroundHeight",
-	"CreativeInventoryMixin",
+ 	"CreativeInventoryMixin",
+    "CreativeHotbarSyncMixin",
     "CreativeScreenHandlerMixin",
 	"ChestsDrawExtraBackground",
 	"BeaconDrawExtraBackground",
 	"HopperDrawExtraBackground",
-    "FixPlayerInventoryStorageImpl"
+    "FixPlayerInventoryStorageImpl",
+    "SlotAccessor"
 	
   ],
   "injectors": {

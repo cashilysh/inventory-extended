@@ -15,8 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Inventory.class)
 public abstract class ExtendPlayerInventory {
 
-	@Shadow
-	public static Int2ObjectMap<EquipmentSlot> EQUIPMENT_SLOT_MAPPING;
 
 	@ModifyConstant(method = "*", constant = @Constant(intValue = 36), require = 1)
 	private static int modifyMainSize(int original) {
