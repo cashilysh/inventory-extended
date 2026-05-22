@@ -15,7 +15,8 @@
     "CreativeScreenHandlerMixin",
 	"ChestsDrawExtraBackground",
 	"BeaconDrawExtraBackground",
-	"HopperDrawExtraBackground"
+	"HopperDrawExtraBackground",
+    "FixPlayerInventoryStorageImpl"
 	
   ],
   "injectors": {
