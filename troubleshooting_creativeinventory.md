@@ -1,238 +1,124 @@
-# Troubleshooting: Creative Inventory Screen Slot Mapping
+# Creative Inventory Hotbar Sync — Full Analysis & Fix
 
-## Overview
+## Summary
 
-Inventory slot indices are shifted by +27 everywhere in the mod (main inventory 9→62, hotbar 63→71, offhand 72). The creative screen (`CreativeModeInventoryScreen` + `ItemPickerMenu`) has hardcoded assumptions about slot layout that break with this shift.
+The mod expands the player inventory by 27 slots (hotbar shifts from 36–44 to 63–71 in `InventoryMenu`). The creative screen (`CreativeModeInventoryScreen`) has two modes:
 
----
+1. **Category tab** — The creative item grid + hotbar. Hotbar slots are at `ItemPickerMenu.slots[45..53]` (created by `addInventoryHotbarSlots` after the 45 creative grid slots at 0–44).
+2. **Inventory tab** — Shows the player model, replaces all slots with `SlotWrapper` instances wrapping `InventoryMenu` slots. These already have correct indices (63–71 for hotbar).
 
-## Key Classes
-
-### `CreativeModeInventoryScreen`
-- Screen class (client-only, `containerId = 0`)
-- Inner classes: `ItemPickerMenu`, `SlotWrapper`, `CustomCreativeSlot`
-- Implements `FabricCreativeModeInventoryScreen`
-
-### `ItemPickerMenu` (inner class)
-- Client-only container; `containerId = 0` → synced to server on the player's `InventoryMenu`
-- Constructor (`<init>`): sets `inventoryMenu = player.inventoryMenu`, creates 5×9 creative grid slots + 9 hotbar slots via `addInventoryHotbarSlots(inventory, 9, 112)`, then calls `scrollTo(0)`
-- `getCarried()` / `setCarried()` delegate to `inventoryMenu` (player's `InventoryMenu`)
-- `quickMoveStack()`: shift-click in last 9 slots → clears the item (single-player only)
-- `calculateRowCount()`: `Mth.positiveCeilDiv(items.size(), 9) - 5`
-- `canScroll()`: `items.size() > 45`
-
-### `SlotWrapper` (inner class)
-- Wraps an `InventoryMenu` slot for display in the **inventory tab** of the creative screen
-- Constructor: `SlotWrapper(Slot target, int slotIndex, int x, int y)`
-  - `this.index = slotIndex` (set by `Slot` super constructor)
-  - `this.target = target` (the original slot)
-- All getter/setter/query methods delegate to `this.target`
-- Used in `selectTab()` when showing the INVENTORY tab (the one with the player model)
-
-### `CustomCreativeSlot` (inner class)
-- Simple slot used for the 5×9 creative grid in category tabs
-- Only overrides `mayPickup(player)` → checks creative mode
+**Bug:** Clicking a creative item and placing it in a hotbar slot in the **category tab** sends the wrong slot index to the server (45 instead of 63). The server applies the click to `InventoryMenu.slots[45]` which is an inventory slot, not a hotbar slot.
 
 ---
 
-## Slot Layouts
+## The REAL sync path (discovered during investigation)
 
-### Vanilla `InventoryMenu` (after constructor)
-| Index range | Content | Inventory container index |
-|------------|---------|--------------------------|
-| 0 | Crafting result | - |
-| 1–4 | Crafting grid | - |
-| 5–8 | Armor (feet→head) | 36→39 |
-| 9–35 | Main inventory (3 rows) | 9→35 |
-| 36–44 | Hotbar (9 slots) | 0→8 |
-| 45 | Offhand | 40 |
+### Previous (wrong) assumption
+`broadcastChanges()` → `synchronizeSlotToRemote()` → `sendSlotChange()` → `ServerboundContainerSlotPacket`
 
-### Modded `InventoryMenu` (after mixins)
-| Index range | Content | Inventory container index |
-|------------|---------|--------------------------|
-| 0 | Crafting result | - |
-| 1–4 | Crafting grid | - |
-| 5–8 | Armor (feet→head) | 63→66 (shifted +27) |
-| **9–62** | **Main inventory (6 rows)** | **9→62** |
-| **63–71** | **Hotbar (9 slots)** | **0→8** |
-| **72** | **Offhand** | **67** |
+### Actual sync path
+`AbstractContainerScreen` → `MultiPlayerGameMode.handleContainerInput(containerId, slotId, button, action)` →
+1. Copies all slot items (before state)
+2. `menu.clicked(slotId, ...)` → `doClick(slotId, ...)` — modifies the actual containers
+3. Compares before/after to build `changedItems` map
+4. Sends `ServerboundContainerClickPacket(containerId, stateId, (short)slotId, ...)`
 
-### `ItemPickerMenu` after constructor (category tab)
-| Index range | Content | Container reference |
-|------------|---------|-------------------|
-| 0–44 | Creative grid (5×9 CustomCreativeSlots) | `CONTAINER` (index 0→44) |
-| **45–53** | **Hotbar (9 regular Slots)** | **player.inventory** (index 0→8) |
+The server receives this packet and processes the click on the slot identified by `slotId` within the player's `InventoryMenu` (containerId=0).
 
-The hotbar slots at indices 45–53 reference `player.inventory.getItem(0)` through `player.inventory.getItem(8)` — this is **correct for the Inventory's hotbar indices (0–8)**. But the **menu slot index** (45–53) is what gets sent to the server.
+### Why the old fix didn't work
+The first `CreativeHotbarSyncMixin` redirected `ContainerSynchronizer.sendSlotChange` inside `synchronizeSlotToRemote`. But `broadcastChanges` is only called on `player.inventoryMenu` (the `InventoryMenu`), **not** on the `ItemPickerMenu`. The `instanceof ItemPickerMenu` check in the redirect handler always failed because `this` was an `InventoryMenu` instance.
 
 ---
 
-## How Creative Screen Slot Clicks Work
+## The Fix
 
-### Category tab (not inventory tab)
+**New mixin:** `CreativeHotbarSyncMixin` (replaces the old one)
 
-When you click on a creative grid item and place it in a hotbar slot:
+**Target:** `MultiPlayerGameMode.handleContainerInput`
 
-1. `doClick(slotId=45..53, ...)` processes the click
-2. `slot.setByPlayer(item)` or `slot.set(item)` updates the player's `Inventory.getItem(0..8)` directly (correct)
-3. Caller runs `menu.broadcastChanges()` after `doClick`
-4. `broadcastChanges()` iterates `this.slots` (the `ItemPickerMenu`'s slot list)
-5. For each slot: `synchronizeSlotToRemote(i, itemStack, supplier)` where `i` is the **menu index**
-6. Inside `synchronizeSlotToRemote`:
-   ```java
-   // i = 45..53 for hotbar
-   this.remoteSlots.get(i)  // tracks previous state
-   this.synchronizer.sendSlotChange(this, i, copy)
-   ```
-7. `ContainerSynchronizer.sendSlotChange()` sends `ServerboundContainerSlotPacket(containerId, stateId, slotIndex, stack)` to the server
-8. `containerId = 0` → server routes to player's open container (which is `InventoryMenu`)
-9. Server applies the change to `InventoryMenu.slots[slotIndex]`
+**Mechanism:** `@Redirect` on the `ServerboundContainerClickPacket` constructor call (`@At(value = "NEW")`). Intercepts the construction and remaps:
+- `slot` parameter: `45..53 → 63..71`
+- `changedItems` map keys: `45..53 → 63..71`
 
-**THE BUG: slotIndex = 45..53 is sent, but InventoryMenu hotbar is at 63..71.**
-
-### Inventory tab (player model visible)
-
-When you are on the **INVENTORY tab** (`selectedTab.getType() == INVENTORY`):
-
-1. `selectTab(CreativeModeTab)` is called
-2. The entire slot list is replaced: `menu.slots.clear()` followed by a loop creating `SlotWrapper`s for EVERY slot in `player.inventoryMenu`
-3. Each `SlotWrapper` has `index = i` (matching the `InventoryMenu` slot index: 0..45 in vanilla, 0..72 modded)
-4. After the loop, a destroy item slot is appended
-5. Then the mod's `@Inject(method="selectTab", at=@At("TAIL"))` repositions extended slots
-
-Since `SlotWrapper.index = i` where `i` matches `InventoryMenu.slots` index, **slot click indices now DO match the server**. The clicks in the inventory tab work correctly because the indices align.
-
-**The inventory tab works fine. The bug is in the CATEGORY tab.**
+**Safety check:** The handler checks if the clicked slot's class name is `"SlotWrapper"`. In the inventory tab, all visible slots are `SlotWrapper` instances (already have correct indices). In the category tab, hotbar slots are plain `Slot` instances. Remapping only happens when NOT a `SlotWrapper` AND the slot index is in the hotbar range (`[size-9, size)`).
 
 ---
 
-## Bugs Found
+## All Creative-Related Mixins
 
-### BUG 1 (Critical): Creative category tab hotbar sync
+| Mixin file | Target | What it does | Status |
+|-----------|--------|-------------|--------|
+| `CreativeInventoryMixin` | `CreativeModeInventoryScreen` | (a) `handleHotbarLoadOrSave`: +27 to `handleCreativeModeItemAdd` slot — handles hotbar save/load. (b) `selectTab` TAIL: repositions extended slots in inventory tab. | ✅ Fixed |
+| `CreativeHotbarSyncMixin` | `MultiPlayerGameMode` | Redirects `ServerboundContainerClickPacket` constructor to remap slot indices 45→63 for category tab hotbar clicks. **This is the main fix.** | ✅ Fixed |
+| `CreativeScreenHandlerMixin` | `ItemPickerMenu` | `@ModifyConstant` for `5` in constructor: returns `5 + 0` (no-op). Was meant to expand creative grid rows. | ⚠️ No-op placeholder |
 
-**Location:** `AbstractContainerMenu.synchronizeSlotToRemote()` → `synchronizer.sendSlotChange(this, slot, copy)`
+---
 
-**What happens:**
-- `broadcastChanges()` iterates `ItemPickerMenu.slots` (size = 54: 45 creative + 9 hotbar)
-- Hotbar slots at menu indices **45–53** get synced to the server
-- Server applies to `InventoryMenu.slots[45..53]` which are **inventory slots** (not hotbar)
-- Item goes to wrong Inventory slot
+## Debug Output
 
-**Affected interaction:** Any normal click that places a creative grid item into a hotbar slot while on a category tab.
+When enabled, the `CreativeHotbarSyncMixin` prints lines like:
 
-**Fix:** Remap slot index 45→63 when sending `sendSlotChange` from an `ItemPickerMenu` context. The `remoteSlots` tracking remains correct (still uses 45–53 for the local menu), but the packet to the server uses 63–71.
+```
+[InventoryExtended] handleContainerInput: slot=45 size=54 hotbarRange=[45,53] slotClass=Slot isSlotWrapper=false needRemap=true action=PICKUP
+[InventoryExtended]   REMAP slot 45 -> 63
+[InventoryExtended]   REMAP changedItems key 45 -> 63
+```
 
-```java
-@Mixin(AbstractContainerMenu.class)
-public class CreativeHotbarSyncMixin {
-    @Redirect(
-        method = "synchronizeSlotToRemote",
-        at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/inventory/ContainerSynchronizer;sendSlotChange(Lnet/minecraft/world/inventory/AbstractContainerMenu;ILnet/minecraft/world/item/ItemStack;)V")
-    )
-    private void remapCreativeHotbarSync(ContainerSynchronizer sync, AbstractContainerMenu menu,
-                                          int slot, ItemStack stack) {
-        if ((Object)this instanceof ItemPickerMenu) {
-            int size = ((AbstractContainerMenu)(Object)this).slots.size();
-            if (slot >= size - 9 && slot < size) {
-                slot = slot - (size - 9) + 63;
-            }
-        }
-        sync.sendSlotChange(menu, slot, stack);
-    }
-}
+On the **inventory tab** (SlotWrapper slots — should NOT remap):
+```
+[InventoryExtended] handleContainerInput: slot=63 size=74 hotbarRange=[65,73] slotClass=SlotWrapper isSlotWrapper=true needRemap=false action=PICKUP
 ```
 
 ---
 
-### BUG 2 (Already Fixed): `handleHotbarLoadOrSave`
+## Key Constants
 
-**Location:** `CreativeModeInventoryScreen.handleHotbarLoadOrSave(Minecraft, int, boolean, boolean)`
-
-**Vanilla code (lines 80–90):**
-```java
-minecraft.gameMode.handleCreativeModeItemAdd(stack, 36 + slot);
-```
-This sends the hotbar index as **36 + slotIndex** (0..8 → 36..44).
-
-**Fix:** `CreativeInventoryMixin.inventoryextended$fixCreativeHotbarSync` modifies the slot argument: `return slot + 27;`
-→ `handleCreativeModeItemAdd` receives **63 + slotIndex** (63..71). ✅
-
----
-
-### BUG 3 (Minor — Visual Only): `selectTab` offhand slot check
-
-**Location:** `CreativeModeInventoryScreen.selectTab()` — the loop creating `SlotWrapper`s
-
-**Vanilla code (bytecode offsets 451–466):**
-```java
-if (i == 45) {
-    x = 35; y = 20;  // offhand
-}
-```
-
-**Problem:** With the mod, slot 45 is a regular inventory slot (not offhand). The offhand is at slot 72.
-
-**Effect:** The vanilla loop creates a `SlotWrapper` for i=45 with position (35, 20). Then the mod's `@Inject(method="selectTab", at=@At("TAIL"))` repositions slot 45 as an inventory slot (x=9+col*18, y=54+row*18). Visual is corrected. ✅
-
-(Less of a bug, more of a double-write.)
+| Constant | Vanilla | Modded | Meaning |
+|----------|---------|--------|---------|
+| Main inventory size | 36 | 63 | `Inventory` main items count |
+| InventoryMenu hotbar start | 36 | 63 | `HOTBAR_SLOT_START` |
+| InventoryMenu hotbar end | 45 | 72 | `HOTBAR_SLOT_END` (exclusive) |
+| InventoryMenu offhand | 45 | 72 | Position in menu slots list |
+| ItemPickerMenu hotbar start | 45 | 45 | Position in creative menu (unchanged) |
+| ItemPickerMenu hotbar end | 54 | 54 | 45 creative + 9 hotbar (unchanged) |
+| ItemPickerMenu size (category) | 54 | 54 | 45 creative + 9 hotbar |
+| ItemPickerMenu size (inventory tab) | 46 + 1 | 73 + 1 | SlotWrappers + destroy slot |
+| InventoryMenu total slots | 46 | 73 | 0-craft + 1-4-crafting + 5-8-armor + 9-62-inv + 63-71-hotbar + 72-offhand |
 
 ---
 
-### BUG 4 (Minor — No-Op): Creative grid row count
+## Slot Index Mapping Table
 
-**Location:** `CreativeScreenHandlerMixin.modifyCreativeRows(int original)`
+### Category tab (creative grid + hotbar)
+| ItemPickerMenu index | Content | Container | Container index |
+|---------------------|---------|-----------|-----------------|
+| 0–44 | Creative grid (CustomCreativeSlot) | `CONTAINER` (SimpleContainer) | 0–44 |
+| **45–53** | **Hotbar (9 regular Slots)** | **playerInventory** | **0–8** |
 
-```java
-@ModifyConstant(method = "<init>", constant = @Constant(intValue = 5))
-private int modifyCreativeRows(int original) {
-    return original + 0; // placeholder
-}
-```
+→ Hotbar slots reference `playerInventory.items[0..8]` (correct).
+→ **But menu index 45–53 expects server InventoryMenu index 63–71.**
 
-**Effect:** No change. The creative grid stays at 5 rows. The comment says "Expand creative grid from 5×9 to 8×9" but the code is `original + 0`. If the goal is to show 6 inventory rows worth of content in the creative grid, this should be changed from `original + 0` to `original + 3` (or modify the constructor constant directly). This is a separate feature issue, not related to the hotbar bug.
+### Inventory tab (player model view)
+| ItemPickerMenu index | Content | Wraps InventoryMenu slot |
+|---------------------|---------|-------------------------|
+| 0–4 | Hidden (crafting) | InventoryMenu.slots[0–4] |
+| 5–8 | Armor (SlotWrapper) | InventoryMenu.slots[5–8] |
+| 9–62 | Inventory (SlotWrapper) | InventoryMenu.slots[9–62] |
+| **63–71** | **Hotbar (SlotWrapper)** | **InventoryMenu.slots[63–71]** |
+| 72 | Offhand (SlotWrapper) | InventoryMenu.slots[72] |
+| 73 | Destroy item slot | CONTAINER |
 
----
-
-## How the Creative Screen Sync Works (Full Flow)
-
-```
-Client (ItemPickerMenu, containerId=0)
-  │
-  │  doClick(slotId, ...)          ← slot index in ItemPickerMenu.slots
-  │  broadcastChanges()
-  │    synchronizeSlotToRemote(slotId, stack, ...)
-  │      ├── remoteSlots.get(slotId)        ← local tracking, uses slotId
-  │      ├── remoteSlots.set(slotId, ...)   ← local tracking, uses slotId
-  │      └── sendSlotChange(this, slotId, copy)  ← packet to server
-  │
-  ├─── ServerboundContainerSlotPacket ───► Server
-  │       { containerId=0, slot=slotId, stack=... }
-  │
-  ▼
-Server (InventoryMenu, containerId=0)
-  │
-  │  handleContainerSlot(packet)
-  │    menu = player.containerMenu   ← InventoryMenu (because containerId == 0)
-  │    menu.slots[packet.slot].set(packet.stack)
-  │
-  ▼
-  Vanilla:   menu.slots[45..53] → offhand + slot 46..53 don't exist! (handled by server differently)
-  Modded:    menu.slots[45..53] → inventory slots (wrong!)
-  Should be: menu.slots[63..71] → hotbar slots (correct)
-```
+→ SlotWrapper indices already match InventoryMenu. No remapping needed.
 
 ---
 
-## Summary of Needed Changes
+## Files Modified
 
-| Priority | What | Status |
-|----------|------|--------|
-| **P0** | Add `CreativeHotbarSyncMixin` — remap `sendSlotChange` slot indices for `ItemPickerMenu` hotbar | ❌ Not implemented |
-| P1 | `CreativeScreenHandlerMixin.modifyCreativeRows` — currently `+0` (no-op) | ⚠️ Placeholder |
-| P2 | Review if creative grid should be expanded to 6+ rows to match inventory | 🤔 Future |
+1. **NEW/REPLACED:** `src/main/java/inventoryextended/mixin/CreativeHotbarSyncMixin.java`
+   - `@Mixin(MultiPlayerGameMode.class)`
+   - `@Redirect` on `ServerboundContainerClickPacket` constructor in `handleContainerInput`
+   - Remaps slot index and changedItems map keys for category tab hotbar clicks
+   - Includes `System.out.println` debug logging
 
-### Files to create/modify
-
-1. **NEW:** `src/main/java/inventoryextended/mixin/CreativeHotbarSyncMixin.java`
-2. **MODIFY:** `src/main/resources/inventoryextended.mixins.json` (add the new mixin reference)
+2. **MODIFIED:** `src/main/resources/inventoryextended.mixins.json`
+   - Added `"CreativeHotbarSyncMixin"` entry

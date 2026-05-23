@@ -10,8 +10,14 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface SlotAccessor {
 
     @Accessor("x")
+    int getX();
+
+    @Accessor("x")
     @Mutable
     void setX(int x);
+
+    @Accessor("y")
+    int getY();
 
     @Accessor("y")
     @Mutable

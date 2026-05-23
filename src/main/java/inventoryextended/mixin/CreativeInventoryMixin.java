@@ -14,11 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CreativeInventoryMixin {
 
     /*
-     * ============================================================
-     * Fix creative hotbar sync
-     * ============================================================
+     * Fix creative hotbar save/load sync.
+     * Vanilla sends handleCreativeModeItemAdd(stack, 36 + i).
+     * Modded hotbar is at 63, so shift by +27.
      */
-
     @ModifyArg(
             method = "handleHotbarLoadOrSave",
             at = @At(
@@ -27,83 +26,84 @@ public abstract class CreativeInventoryMixin {
             ),
             index = 1
     )
-    private static int inventoryextended$fixCreativeHotbarSync(int slot) {
-        return slot + 27;
+    private static int fixCreativeHotbarSync(int slot) {
+        int remapped = slot + 27;
+        System.out.println("[InventoryExtended] handleHotbarLoadOrSave: slot " + slot
+                + " -> " + remapped);
+        return remapped;
     }
 
     /*
-     * ============================================================
-     * Reposition extended inventory slots
-     * ============================================================
+     * Reposition extended inventory slots in the inventory tab
+     * (the tab with the player model).  Runs after the vanilla
+     * selectTab loop finishes creating SlotWrappers.
      */
-
     @Inject(
             method = "selectTab",
             at = @At("TAIL")
     )
-    private void inventoryextended$repositionExtendedSlots(
+    private void repositionExtendedSlots(
             net.minecraft.world.item.CreativeModeTab tab,
             CallbackInfo ci
     ) {
         CreativeModeInventoryScreen self =
-                (CreativeModeInventoryScreen)(Object)this;
+                (CreativeModeInventoryScreen) (Object) this;
 
-        if (!self.isInventoryOpen()) {
+        boolean isInventory = self.isInventoryOpen();
+        String tabName = tab != null
+                ? tab.getDisplayName().getString()
+                : "null";
+
+        System.out.println("[InventoryExtended] selectTab TAIL: tab=" + tabName
+                + " isInventoryOpen=" + isInventory);
+
+        if (!isInventory) {
+            ItemPickerMenu menu = (ItemPickerMenu) self.getMenu();
+            System.out.println("[InventoryExtended]   menu.slots.size=" + menu.slots.size()
+                    + "  (not inventory tab, skipping reposition)");
             return;
         }
 
-        ItemPickerMenu menu = (ItemPickerMenu)self.getMenu();
+        ItemPickerMenu menu = (ItemPickerMenu) self.getMenu();
+        System.out.println("[InventoryExtended]   menu.slots.size=" + menu.slots.size());
 
+        int repositioned = 0;
         for (Slot slot : menu.slots) {
-
             int i = slot.index;
+            SlotAccessor accessor = (SlotAccessor) (Object) slot;
 
-            SlotAccessor accessor =
-                    (SlotAccessor)(Object)slot;
+            int oldX = accessor.getX();
+            int oldY = accessor.getY();
 
-            /*
-             * Vanilla:
-             *
-             * 0-4   crafting
-             * 5-8   armor
-             * 9-35  inventory
-             * 36-44 hotbar
-             * 45    offhand
-             *
-             * Extended:
-             *
-             * 9-62  inventory
-             * 63-71 hotbar
-             * 72    offhand
-             */
-
-            // Main inventory
             if (i >= 9 && i < 63) {
-
                 int pos = i - 9;
-
                 int row = pos / 9;
                 int col = pos % 9;
-
                 accessor.setX(9 + col * 18);
                 accessor.setY(54 + row * 18);
-            }
-
-            // Hotbar
-            else if (i >= 63 && i < 72) {
-
+                repositioned++;
+                System.out.println("[InventoryExtended]   REPOSITION inventory slot " + i
+                        + " row=" + row + " col=" + col
+                        + " (" + oldX + "," + oldY + ") -> ("
+                        + accessor.getX() + "," + accessor.getY() + ")");
+            } else if (i >= 63 && i < 72) {
                 int col = i - 63;
-
                 accessor.setX(9 + col * 18);
                 accessor.setY(166);
-            }
-
-            // Offhand
-            else if (i == 72) {
-
+                repositioned++;
+                System.out.println("[InventoryExtended]   REPOSITION hotbar slot " + i
+                        + " col=" + col
+                        + " (" + oldX + "," + oldY + ") -> ("
+                        + accessor.getX() + "," + accessor.getY() + ")");
+            } else if (i == 72) {
                 accessor.setX(173);
                 accessor.setY(166);
+                repositioned++;
+                System.out.println("[InventoryExtended]   REPOSITION offhand slot " + i
+                        + " (" + oldX + "," + oldY + ") -> ("
+                        + accessor.getX() + "," + accessor.getY() + ")");
             }
         }
+        System.out.println("[InventoryExtended]   total repositioned: " + repositioned);
     }
 }

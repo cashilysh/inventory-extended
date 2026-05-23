@@ -12,7 +12,6 @@
 	"FurnaceScreenRecipeBookButton",
 	"IncreaseGlobalBackgroundHeight",
  	"CreativeInventoryMixin",
-    "CreativeHotbarSyncMixin",
     "CreativeScreenHandlerMixin",
 	"ChestsDrawExtraBackground",
 	"BeaconDrawExtraBackground",
