@@ -5,6 +5,13 @@ P7dR8mSH
 1.0.0
 initial release
 
+1.1.0
+
+
+- Fixed creative inventory hotbar sync and slot mapping issues through better server handling for extended creative slot ranges
+- Added proper extended creative player inventory support
+- Fixed hotkey "F" offhand/highlighted-item swap
+
 
 
 

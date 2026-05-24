@@ -12,11 +12,12 @@
 	"FurnaceScreenRecipeBookButton",
 	"IncreaseGlobalBackgroundHeight",
  	"CreativeInventoryMixin",
-    "CreativeScreenHandlerMixin",
 	"ChestsDrawExtraBackground",
 	"BeaconDrawExtraBackground",
 	"HopperDrawExtraBackground",
     "FixPlayerInventoryStorageImpl",
+    "FixCreativeSlotRangeCheck",
+    "FixSwapOffhandContainer",
     "SlotAccessor"
 	
   ],

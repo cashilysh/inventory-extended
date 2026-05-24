@@ -86,7 +86,8 @@ def resolveVersions(String gameVersion) {
     // --- All other mods: resolve only what's declared in gradle.properties ---
     def allDeclaredSlugs = (
         ((project.findProperty('deps.implementation') ?: '') + ',' +
-         (project.findProperty('deps.compileOnly')    ?: ''))
+         (project.findProperty('deps.compileOnly')    ?: '') + ',' +
+         (project.findProperty('deps.localRuntime')   ?: ''))
         .split(',')
         .collect  { it.trim() }
         .findAll  { it && it != 'fabric-loader' }  // fabric-loader handled above
@@ -276,6 +277,11 @@ java {
 
 def resolvedMap = project.ext.versionMappings
 
+configurations {
+    modLocalRuntime
+    runtimeClasspath.extendsFrom modLocalRuntime
+}
+
 dependencies {
 
     println ""
@@ -288,8 +294,9 @@ dependencies {
         implementation "net.fabricmc:fabric-loader:${resolvedMap['fabric-loader']}"
     }
 
-    def implSlugs     = (project.findProperty('deps.implementation') ?: '').split(',').collect { it.trim() }.findAll { it }
-    def compOnlySlugs = (project.findProperty('deps.compileOnly')    ?: '').split(',').collect { it.trim() }.findAll { it }
+    def implSlugs        = (project.findProperty('deps.implementation') ?: '').split(',').collect { it.trim() }.findAll { it }
+    def compOnlySlugs    = (project.findProperty('deps.compileOnly')    ?: '').split(',').collect { it.trim() }.findAll { it }
+    def localRuntimeSlugs = (project.findProperty('deps.localRuntime')  ?: '').split(',').collect { it.trim() }.findAll { it }
 
     implSlugs.each { slug ->
         if (slug == 'fabric-loader') return
@@ -310,5 +317,15 @@ dependencies {
             : "maven.modrinth:${slug}:${version}"
         println ">> Adding compileOnly dependency: ${coords}"
         compileOnly coords
+    }
+
+    localRuntimeSlugs.each { slug ->
+        def version = resolvedMap[slug]
+        if (!version) { println "   ⚠ No resolved version for ${slug} — skipping"; return }
+        def coords = slug == 'fabric-api'
+            ? "net.fabricmc.fabric-api:fabric-api:${version}"
+            : "maven.modrinth:${slug}:${version}"
+        println ">> Adding modLocalRuntime dependency: ${coords}"
+        modLocalRuntime coords
     }
 }

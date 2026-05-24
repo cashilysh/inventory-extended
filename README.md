@@ -2,7 +2,7 @@
 
 The default Minecraft inventory was designed when the game had far fewer items. Nowadays, it feels restrictive as it's quickly filling up with junk and making inventory management a hassle.
 
-Shulker boxes and bundles aren’t practical alternatives—they require constant placement, breaking, and micromanagement, disrupting the flow rather than improving it.
+Shulker boxes and bundles aren't practical alternatives -- they require constant placement, breaking, and micromanagement, disrupting the flow rather than improving it.
 
 <br>
 
@@ -15,14 +15,15 @@ Shulker boxes and bundles aren’t practical alternatives—they require constan
 
 **Notes:**
 - Vanilla `offHand` and `equipment` slot mappings are modified and may break mod-compatibility
-- Creative Inventory is still buggy and returns glitched items
 - Quick-SHIFT-Click sort may be glitchy and not sort to the expanded slots
+- Creative Inventory placing and saving is functional but may still have edge cases
 - Currently only Client compatibility
-<br>
 
 <br>
 
-**This is a WIP version and may contain other bugs and glitches! Use at your own risk!**
+<br>
+
+**This is a WIP version and may contain other bugs and glitches. Use at your own risk.**
 
 <br>
 <br>
@@ -34,11 +35,10 @@ Shulker boxes and bundles aren’t practical alternatives—they require constan
 
 ---
 
-
-# Download:
+## Download
 
 [Inventory Extended on Modrinth](https://modrinth.com/project/inventory-extended)
 
 ---
 
-*Uninstalling the mod deletes your extra inventory and its contents permanently. I’m not responsible for lost items or data corruption. Back up your items/player data before removing or upgrading the mod or Minecraft version.*
+*Uninstalling the mod deletes your extra inventory and its contents permanently. I'm not responsible for lost items or data corruption. Back up your items/player data before removing or upgrading the mod or Minecraft version.*
