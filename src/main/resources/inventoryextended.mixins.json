@@ -18,8 +18,22 @@
     "FixPlayerInventoryStorageImpl",
     "FixCreativeSlotRangeCheck",
     "FixSwapOffhandContainer",
-    "SlotAccessor"
-	
+    "SlotAccessor",
+    "FixHandleEditBook",
+    "FixBookEditScreen",
+    "FixCraftingMenuQuickMove",
+    "FixFurnaceMenuQuickMove",
+    "FixBeaconMenuQuickMove",
+    "FixBrewingStandMenuQuickMove",
+    "FixMerchantMenuQuickMove",
+    "FixStonecutterMenuQuickMove",
+    "FixLoomMenuQuickMove",
+    "FixEnchantmentMenuQuickMove",
+    "FixCartographyMenuQuickMove",
+    "FixGrindstoneMenuQuickMove",
+    "FixDispenserMenuQuickMove",
+    "FixCrafterMenuQuickMove",
+    "FixMountMenuQuickMove"
   ],
   "injectors": {
     "defaultRequire": 1
