@@ -11,12 +11,13 @@
 
 - **Java 25 required** (build fails otherwise). Gradle 9.5.1 via wrapper.
 - Dependencies are resolved **at config-time from live APIs** (meta.fabricmc.net, api.modrinth.com). The build needs internet.
+- Default target version: `26.1.2` (set in `gradle.properties`). Built `fabric.mod.json` may differ due to `editFabricModJson` task.
 
 ## Architecture
 
 - **Fabric mod** using Fabric Loom (`1.16-SNAPSHOT`). Entrypoint: `inventoryextended.InventoryExtended` (implements `ModInitializer`).
-- **All logic is in mixins** (14 total in `src/main/java/inventoryextended/mixin/`). The entrypoint class just logs init. Mixin config at `src/main/resources/inventoryextended.mixins.json`.
-- Expands inventory from 36 to 63 slots by modifying constants/slot indices via Mixin.
+- **All logic is in mixins** (30 total in `src/main/java/inventoryextended/mixin/`). The entrypoint class just logs init. Mixin config at `src/main/resources/inventoryextended.mixins.json`.
+- Expands inventory from 36 to 63 slots by modifying constants/slot indices via Mixin (+27 offset throughout).
 
 ## Modded Inventory Layout
 
@@ -59,10 +60,66 @@ Uses `SlotWrapper` instances wrapping `InventoryMenu` slots — indices match `I
 ## Key gotchas
 
 - **`fabric.mod.json` is auto-generated** at build time by `editFabricModJson` task. Do not manually edit version/depends fields; they get overwritten from `gradle.properties` and live API results.
-- **Version-specific overrides**: `src/version_specific/` contains Java sources that override `src/main/java/` files for specific MC version ranges. The `applyVersionSpecificOverrides` task copies them in before compile and the `buildFinished` hook restores originals. Files in `src/main/java/` are temporarily mutated during build.
+- **Version-specific overrides**: `src/version_specific/` can hold Java sources that override `src/main/java/` files for specific MC version ranges. The `applyVersionSpecificOverrides` task copies them in before compile and the `buildFinished` hook restores originals. Currently empty — infrastructure exists but no overrides are active.
 - **MC 26.x is unobfuscated** — the output task is `jar`, not `remapJar` (Loom skips remapping).
-- Dependencies are declared as **Modrinth slugs** in `gradle.properties` under `deps.implementation` / `deps.compileOnly`, not as standard Maven coordinates.
+- Dependencies are declared as **Modrinth slugs** in `gradle.properties` under `deps.implementation` / `deps.compileOnly` / `deps.localRuntime`, not as standard Maven coordinates.
 - No tests exist in this project.
+
+## All Mixins (30 total)
+
+### Core inventory expansion
+| File | Target | Purpose |
+|------|--------|---------|
+| `ExtendPlayerInventory` | `Inventory` | +27 to main size, offhand, armor indices |
+| `RemapPlayerSlots` | `InventoryMenu` | +27 to hotbar/offhand/armor slot constants |
+| `GlobalDrawExtraSlots` | `AbstractContainerMenu` | 3→6 inventory rows, hotbar Y 58→112 |
+| `IncreaseGlobalBackgroundHeight` | `AbstractContainerScreen` | 166→226 bg height, label Y adjust |
+| `SlotAccessor` | `Slot` | Accessors for x/y get/set (with `@Mutable`) |
+
+### Creative screen
+| File | Target | Purpose |
+|------|--------|---------|
+| `CreativeInventoryMixin` | `CreativeModeInventoryScreen` | Hotbar save/load +27, quick-craft save `36`→`63`, click→server sync, inventory tab reposition, debug logging |
+| `FixCreativeSlotRangeCheck` | `ServerGamePacketListenerImpl` | `45`→`72` creative slot range on server |
+
+### Recipe book button positions
+| File | Target | Purpose |
+|------|--------|---------|
+| `PlayerInventoryRecipeButton` | `InventoryScreen` | Recipe book button Y +30 |
+| `CraftingScreenRecipeBookButton` | `CraftingScreen` | Recipe book button Y +30 |
+| `FurnaceScreenRecipeBookButton` | `AbstractFurnaceScreen` | Recipe book button Y +30 |
+
+### Container background drawing
+| File | Target | Purpose |
+|------|--------|---------|
+| `ChestsDrawExtraBackground` | `ContainerScreen` | Extra inventory bg for chests |
+| `BeaconDrawExtraBackground` | `BeaconScreen` | Extra inventory bg for beacon |
+| `HopperDrawExtraBackground` | `HopperScreen` | Extra inventory bg for hopper |
+
+### QuickMove fixes (+27 offset in `quickMoveStack` constants)
+| File | Target | Purpose |
+|------|--------|---------|
+| `FixCraftingMenuQuickMove` | `CraftingMenu` | `37`→`64`, `46`→`73` |
+| `FixFurnaceMenuQuickMove` | `AbstractFurnaceMenu` | Index adjustments |
+| `FixBeaconMenuQuickMove` | `BeaconMenu` | Index adjustments |
+| `FixBrewingStandMenuQuickMove` | `BrewingStandMenu` | Index adjustments |
+| `FixMerchantMenuQuickMove` | `MerchantMenu` | Index adjustments |
+| `FixStonecutterMenuQuickMove` | `StonecutterMenu` | Index adjustments |
+| `FixLoomMenuQuickMove` | `LoomMenu` | Index adjustments |
+| `FixEnchantmentMenuQuickMove` | `EnchantmentMenu` | Index adjustments |
+| `FixCartographyMenuQuickMove` | `CartographyMenu` | Index adjustments |
+| `FixGrindstoneMenuQuickMove` | `GrindstoneMenu` | Index adjustments |
+| `FixDispenserMenuQuickMove` | `DispenserMenu` | Index adjustments |
+| `FixCrafterMenuQuickMove` | `CrafterMenu` | Index adjustments |
+| `FixMountMenuQuickMove` | `AbstractMountInventoryMenu` | `27`→`54` |
+
+### Other fixes
+| File | Target | Purpose |
+|------|--------|---------|
+| `FixPlayerInventoryStorageImpl` | `PlayerInventoryStorageImpl` | +27 to fabric transfer API indices |
+| `FixSwapOffhandContainer` | `AbstractContainerScreen` | `checkHotbarKeyPressed`: `40`→`67` (offhand swap) |
+| `FixHandleEditBook` | `ServerGamePacketListenerImpl` | `handleEditBook`: `40`→`67` (offhand slot) |
+| `FixBookEditScreen` | `BookEditScreen` | `saveChanges`: `40`→`67` (offhand slot) |
 
 ## Creative inventory — full troubleshooting reference
 
@@ -115,27 +172,9 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 | Using `slot.index` for SlotWrapper slot identification | Vanilla `selectTab` adds SlotWrappers with `menu.slots.add()`, not `addSlot()` — `slot.index` stays at 0 for all. |
 | `@ModifyConstant` on `extractTabButton` to change tab gap globally | The `4` is correct for all non-inventory tabs. Only the inventory tab needs a larger gap. Fixed by adjusting `HEIGHT_EXTENDED` instead. |
 
-## All Mixins
-
-| File | Target | Purpose |
-|------|--------|---------|
-| `ExtendPlayerInventory` | `Inventory` | +27 to main size, offhand, armor indices |
-| `RemapPlayerSlots` | `InventoryMenu` | +27 to hotbar/offhand/armor slot constants |
-| `GlobalDrawExtraSlots` | `AbstractContainerMenu` | 3→6 inventory rows, hotbar Y 58→112 |
-| `SlotAccessor` | `Slot` | Accessors for x/y get/set (with `@Mutable`) |
-| `CreativeInventoryMixin` | `CreativeModeInventoryScreen` | (a) `fixCreativeHotbarSync` — hotbar save/load +27, (b) `fixSlotClickedHotbarSave` — quick-craft save `36`→`63`, (c) `syncCreativeHotbarSlot` — TAIL click→server sync, (d) `repositionExtendedSlots` — dynamic imageHeight + full inventory tab reposition, (e) `debugSlotClicked` — debug logging |
-| `IncreaseGlobalBackgroundHeight` | `AbstractContainerScreen` | 166→226 bg height, label Y adjust |
-| `PlayerInventoryRecipeButton` | `InventoryScreen` | Recipe book button Y +30 |
-| `CraftingScreenRecipeBookButton` | `CraftingScreen` | Recipe book button Y +30 |
-| `FurnaceScreenRecipeBookButton` | `AbstractFurnaceScreen` | Recipe book button Y +30 |
-| `ChestsDrawExtraBackground` | `ContainerScreen` | Extra inventory bg for chests |
-| `BeaconDrawExtraBackground` | `BeaconScreen` | Extra inventory bg for beacon |
-| `HopperDrawExtraBackground` | `HopperScreen` | Extra inventory bg for hopper |
-| `FixPlayerInventoryStorageImpl` | `PlayerInventoryStorageImpl` | +27 to fabric transfer API indices |
-| `FixCreativeSlotRangeCheck` | `ServerGamePacketListenerImpl` | `45`→`72` creative slot range on server |
-
 ## Conventions
 
 - Mixin class names are descriptive CamelCase (e.g. `ExtendPlayerInventory`, `RemapPlayerSlots`).
-- Shell scripts (`BUILD ALL.sh`, etc.) contain `read -p` prompts and will hang waiting for Enter.
+- Shell scripts (`BUILD ALL.sh`, etc.) contain `read -p` prompts and will hang waiting for Enter — don't run them unattended.
 - `./gradlew clean` also triggers file restoration of version-specific overrides (via `buildFinished`).
+- All QuickMove mixins follow the same pattern: `@ModifyConstant` replacing hardcoded inventory index constants with `original + 27`.

@@ -19,9 +19,8 @@ build_version() {
 echo "Building mod for all Minecraft versions..."
 # ./gradlew clean
 
-build_version "26.1"
-build_version "26.1.1"
 build_version "26.1.2"
+build_version "26.2"
 
 
 
