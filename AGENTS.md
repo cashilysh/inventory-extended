@@ -3,15 +3,36 @@
 ## Build
 
 ```
-./gradlew build
+./gradlew build                                  # unit + server game tests
 ./gradlew clean build
-./gradlew build -PtargetVersion=26.1            # target a specific MC version
+./gradlew build -PtargetVersion=26.2             # target a specific MC version
 ./gradlew runclient                              # launch client after build
+```
+
+Convenience test runner (colored output + clean log):
+```
+./RUN TESTS.sh         # all tests
+./RUN TESTS.sh unit    # unit tests only
+./RUN TESTS.sh server  # server game tests only
+./RUN TESTS.sh client  # client game tests only
+```
+Supports `-PtargetVersion=` forwarding:
+```
+./RUN TESTS.sh all -PtargetVersion=26.2
+```
+
+Direct Gradle test tasks:
+```
+./gradlew test             # unit tests (Fabric Loader JUnit)
+./gradlew runGameTest      # server game tests
+./gradlew runClientGameTest # client game tests
 ```
 
 - **Java 25 required** (build fails otherwise). Gradle 9.5.1 via wrapper.
 - Dependencies are resolved **at config-time from live APIs** (meta.fabricmc.net, api.modrinth.com). The build needs internet.
 - Default target version: `26.1.2` (set in `gradle.properties`). Built `fabric.mod.json` may differ due to `editFabricModJson` task.
+- Tests require `JAVA_HOME` set (e.g. `export JAVA_HOME=/usr/lib/jvm/java-25-openjdk`). `RUN TESTS.sh` defaults to that path if unset.
+- MC 26.1.2 and 26.2 are both supported. Only known API break: `EntityType.HORSE` → `EntityTypes.HORSE` (handle via reflection in `QuickMoveOtherMenusGameTest`).
 
 ## Architecture
 
@@ -63,7 +84,85 @@ Uses `SlotWrapper` instances wrapping `InventoryMenu` slots — indices match `I
 - **Version-specific overrides**: `src/version_specific/` can hold Java sources that override `src/main/java/` files for specific MC version ranges. The `applyVersionSpecificOverrides` task copies them in before compile and the `buildFinished` hook restores originals. Currently empty — infrastructure exists but no overrides are active.
 - **MC 26.x is unobfuscated** — the output task is `jar`, not `remapJar` (Loom skips remapping).
 - Dependencies are declared as **Modrinth slugs** in `gradle.properties` under `deps.implementation` / `deps.compileOnly` / `deps.localRuntime`, not as standard Maven coordinates.
-- No tests exist in this project.
+- 79 tests total: 15 unit + 59 server game + 5 client game.
+
+## Tests
+
+79 tests total, split across three test types:
+
+| Type | Qty | Location | Framework |
+|------|-----|----------|-----------|
+| Unit | 15 | `src/test/java/inventoryextended/test/` | Fabric Loader JUnit |
+| Server game | 59 | `src/gametest/java/inventoryextended/gametest/` | Fabric GameTest |
+| Client game | 5 | `src/gametest/java/inventoryextended/gametest/` | Fabric ClientGameTest |
+
+### Unit tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `InventorySlotConstantsTest.java` | 4 | isHotbarSlot boundaries, EQUIPMENT_SLOT_MAPPING keys shifted, old keys absent, registry bootstrap |
+| `ConstantBoundaryGameTest.java` | 3 | isHotbarSlot full range (0–79), EQUIPMENT_SLOT_MAPPING full key range, inventory constructor accessible |
+| `ReflectionFieldGameTest.java` | 4 | AbstractContainerScreen fields (imageHeight, topPos), Slot fields (x, y), registry reflection, isHotbarSlot method |
+| `EntityTypeCompatibilityGameTest.java` | 4 | Horse entity type resolvable, all 5 horse variants exist, version API constants, AbstractHorse class |
+
+### Server game tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `InventorySizeGameTest` | 3 | Container size ≥63, place/retrieve all 63 slots, hotbar range |
+| `QuickMoveGameTest` | 4 | Furnace fuel/ingredient/hotbar quick-move, crafting quick-move |
+| `QuickMoveOtherMenusGameTest` | 11 | Beacon, brewing, stonecutter, loom, enchantment, cartography, grindstone, merchant, dispenser, crafter, horse |
+| `ArmorOffhandGameTest` | 4 | Armor slots 63–66, offhand 67, equipping, equipment mapping |
+| `PersistenceGameTest` | 2 | Save/load roundtrip for all 63 slots, extended slots (36, 62) survive |
+| `CreativeExtendedSlotGameTest` | 3 | All 63 main slots writable/readable in creative, InventoryMenu has 73 slots, isHotbarSlot correct range |
+| `OffhandSwapGameTest` | 4 | Offhand slot 67 index, offhand item read, offhand clear/persist, swap constant in menu |
+| `BookEditingGameTest` | 3 | Offhand slot 67 accessible for books, book edit offhand index, written book survives |
+| `QuickMoveEdgeCaseGameTest` | 7 | Partial stack merge (63 coal), extended slot 62→furnace, extended slot→crafting, full inventory, boundary slots (9, 62), hotbar slot 0→57, hotbar slot 8→65 |
+| `PersistenceEdgeCaseGameTest` | 3 | Sparse save/load (slots 0, 30, 62), stack of 64 in slot 9, armor/offhand items readable |
+| `DeathDropGameTest` | 3 | Extended slots (9–62) all accessible, hotbar (0–8) items accessible, armor/offhand slots readable |
+| `CreativeSurvivalTransitionGameTest` | 3 | All 63 slots accessible in creative, all 63 slots in survival, sequential diamond counts |
+| `MixinApplicationGameTest` | 6 | Container size 63, menu slot count 73, isHotbarSlot, EQUIPMENT_SLOT_MAPPING, quick-move, all menu types quick-move |
+| `QuickMoveCoverageGameTest` | 3 | All menu types registered, quick-move doesn't crash, known menus have fix |
+
+Plus 1 test from Fabric API itself.
+
+### Client game tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `CreativeHotbarGameTest` | 1 | Creative screen hotbar constant correctness |
+| `InventoryScreenshotTest` | 1 | Screenshot-based inventory visual verification |
+| `CreativeInventoryTabGameTest` | 1 | Client-side container size, menu slots, isHotbarSlot, screenshot |
+| `RecipeBookButtonGameTest` | 1 | Client-side container size verify, recipe book button screenshot |
+| `ContainerBackgroundGameTest` | 1 | Client-side container size, extra background screenshot |
+
+### Key test implementation details
+
+- Mock players created with `makeMockPlayer(GameType.SURVIVAL)` (MC 26.x API; `makeMockServerPlayerInLevel` is deprecated).
+- `net.minecraft.server.Bootstrap.bootStrap()` — correct bootstrap class for MC 26.x.
+- `TestSingleplayerContext` provides `getClientLevel()` (MC 26.1.2+ Fabric API).
+- Static constant fields (`InventoryMenu.INV_SLOT_END`, etc.) cannot be tested directly — `@ModifyConstant` on `<clinit>` doesn't change compile-time constants. Test `isHotbarSlot()` behavior instead.
+- `getContainerSize()` returns 70 (63 main + 4 armor + 1 offhand + 1 body + 1 saddle) — wider than just main inventory.
+- Quick-move tests for restrictive menus use relaxed assertions (verify range doesn't throw, don't check exact destination).
+- `EntityType.HORSE` → `EntityTypes.HORSE` between 26.1.2 and 26.2: handle via reflection (try `EntityTypes` first, fall back to `EntityType`). Spawn returns wildcard `Entity` — cast to `AbstractHorse`.
+
+### Known test limitations
+
+Some mixins cannot be tested directly due to framework constraints. Their coverage is indirect (slot constants, container size, etc.).
+
+| Mixin | Limitation |
+|-------|-----------|
+| `FixCreativeSlotRangeCheck` (`45`→`72`) | `makeMockPlayer()` returns a mock, not `ServerPlayer`. No `ServerGamePacketListenerImpl` available to call `handleSetCreativeModeSlot`. Verified indirectly via menu slot count ≥73. |
+| `FixSwapOffhandContainer` (`40`→`67`) | Targets `AbstractContainerScreen` (client-only). Server game tests log a "target not found" warning. Covered indirectly by offhand slot index tests. |
+| `FixBookEditScreen` (`40`→`67`) | Targets `BookEditScreen` (client-only). Same as above. Covered indirectly by book slot index tests. |
+| Armor/offhand save/load | `inv.save()` serializes `items`, `armor`, and `offhand` as separate NBT arrays. The `ValueOutput.TypedOutputList` approach only captures the `items` list (slots 0–62). Armor (63–66) and offhand (67) items persist correctly through the game's standard NBT serialization (`Inventory`, `ArmorItem`, `OffhandItem` tags) — just not through the `TypedOutputList` test path. Tests verify read/write accessibility instead. |
+
+### Test infrastructure
+
+- `build.gradle` configures `fabricApi { configureTests { ... } }` block for server and client game tests.
+- `src/gametest/resources/fabric.mod.json` registers gametest entrypoints.
+- `RUN TESTS.sh` produces ANSI-colored terminal output and a plain-text `test_results.log` with per-test PASSED/FAILED + failure details.
+- Test names are extracted from `@GameTest` annotations; the script's parser handles `@GameTest(template = "foo")` patterns.
 
 ## All Mixins (30 total)
 
@@ -175,6 +274,6 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 ## Conventions
 
 - Mixin class names are descriptive CamelCase (e.g. `ExtendPlayerInventory`, `RemapPlayerSlots`).
-- Shell scripts (`BUILD ALL.sh`, etc.) contain `read -p` prompts and will hang waiting for Enter — don't run them unattended.
+- Shell scripts (`BUILD ALL.sh`, `RUN TESTS.sh`, etc.) — `BUILD ALL.sh` contains `read -p` prompts and will hang waiting for Enter; don't run it unattended.
 - `./gradlew clean` also triggers file restoration of version-specific overrides (via `buildFinished`).
 - All QuickMove mixins follow the same pattern: `@ModifyConstant` replacing hardcoded inventory index constants with `original + 27`.

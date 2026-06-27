@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "inventoryextended-test",
+  "version": "1.0.0",
+  "name": "Inventory Extended Tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "inventoryextended.gametest.InventorySizeGameTest",
+      "inventoryextended.gametest.QuickMoveGameTest",
+      "inventoryextended.gametest.QuickMoveOtherMenusGameTest",
+      "inventoryextended.gametest.ArmorOffhandGameTest",
+      "inventoryextended.gametest.PersistenceGameTest",
+      "inventoryextended.gametest.CreativeExtendedSlotGameTest",
+      "inventoryextended.gametest.OffhandSwapGameTest",
+      "inventoryextended.gametest.BookEditingGameTest",
+      "inventoryextended.gametest.QuickMoveEdgeCaseGameTest",
+      "inventoryextended.gametest.PersistenceEdgeCaseGameTest",
+      "inventoryextended.gametest.DeathDropGameTest",
+      "inventoryextended.gametest.CreativeSurvivalTransitionGameTest",
+      "inventoryextended.gametest.MixinApplicationGameTest",
+      "inventoryextended.gametest.QuickMoveCoverageGameTest"
+    ],
+    "fabric-client-gametest": [
+      "inventoryextended.gametest.InventoryScreenshotTest",
+      "inventoryextended.gametest.CreativeHotbarGameTest",
+      "inventoryextended.gametest.CreativeInventoryTabGameTest",
+      "inventoryextended.gametest.RecipeBookButtonGameTest",
+      "inventoryextended.gametest.ContainerBackgroundGameTest"
+    ]
+  },
+  "depends": {
+    "inventoryextended": "*",
+    "fabric-api": "*"
+  }
+}

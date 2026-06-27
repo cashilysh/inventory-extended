@@ -328,4 +328,20 @@ dependencies {
         println ">> Adding modLocalRuntime dependency: ${coords}"
         modLocalRuntime coords
     }
+
+    testImplementation "net.fabricmc:fabric-loader-junit:${resolvedMap['fabric-loader']}"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "${jarName}-test"
+        enableGameTests = true
+        enableClientGameTests = true
+        eula = true
+    }
 }
