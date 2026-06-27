@@ -5,12 +5,11 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
-import net.minecraft.client.Minecraft;
-
-import inventoryextended.mixin.SlotAccessor;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 @SuppressWarnings("UnstableApiUsage")
 public class CreativeInventoryTabGameTest implements FabricClientGameTest {
@@ -40,8 +39,7 @@ public class CreativeInventoryTabGameTest implements FabricClientGameTest {
                 }
 
                 for (int i = 0; i < 9; i++) {
-                    boolean hotbar = InventoryMenu.isHotbarSlot(63 + i);
-                    if (!hotbar) {
+                    if (!InventoryMenu.isHotbarSlot(63 + i)) {
                         throw new AssertionError(
                             "isHotbarSlot(" + (63 + i) + ") should be true");
                     }
@@ -61,18 +59,56 @@ public class CreativeInventoryTabGameTest implements FabricClientGameTest {
             });
 
             context.computeOnClient(mc -> {
+                Inventory inv = mc.player.getInventory();
                 for (int i = 0; i < 9; i++) {
-                    if (mc.player == null) break;
-                    Inventory inv = mc.player.getInventory();
-                    inv.setItem(i, new net.minecraft.world.item.ItemStack(
-                            net.minecraft.world.item.Items.STONE, i + 1));
+                    inv.setItem(i, new ItemStack(Items.STONE, i + 1));
                 }
                 for (int i = 9; i < 63; i++) {
-                    if (mc.player == null) break;
-                    Inventory inv = mc.player.getInventory();
-                    inv.setItem(i, new net.minecraft.world.item.ItemStack(
-                            net.minecraft.world.item.Items.DIRT, i + 1));
+                    inv.setItem(i, new ItemStack(Items.DIRT, i + 1));
                 }
+                return null;
+            });
+
+            context.computeOnClient(mc -> {
+                MinecraftServer server = mc.getSingleplayerServer();
+                if (server == null) {
+                    throw new AssertionError("Integrated server not available "
+                        + "in singleplayer — FixCreativeSlotRangeCheck may not "
+                        + "be loaded for integrated server.");
+                }
+
+                ServerPlayer serverPlayer = server.getPlayerList()
+                        .getPlayer(mc.player.getUUID());
+                if (serverPlayer == null) {
+                    throw new AssertionError("ServerPlayer not found in "
+                        + "integrated server player list");
+                }
+
+                Inventory serverInv = serverPlayer.getInventory();
+                int serverSize = serverInv.getContainerSize();
+                if (serverSize < 63) {
+                    throw new AssertionError(
+                        "Integrated server inventory containerSize = "
+                        + serverSize + " (expected >= 63). Mixins may not "
+                        + "be applied on the integrated server side.");
+                }
+
+                for (int i = 0; i < 63; i++) {
+                    serverInv.setItem(i, new ItemStack(Items.DIAMOND, 1));
+                }
+
+                int accessible = 0;
+                for (int i = 0; i < 63; i++) {
+                    if (serverInv.getItem(i).is(Items.DIAMOND)) accessible++;
+                }
+
+                if (accessible < 63) {
+                    throw new AssertionError(
+                        "Only " + accessible + "/63 server-side inventory "
+                        + "slots accessible in singleplayer integrated server. "
+                        + "ExtendPlayerInventory mixin may not be applied.");
+                }
+
                 return null;
             });
 
