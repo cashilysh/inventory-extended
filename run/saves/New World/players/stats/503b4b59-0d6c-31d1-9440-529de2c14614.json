@@ -1,0 +1,16 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 9732,
+      "minecraft:total_world_time": 9732,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 9732,
+      "minecraft:time_since_death": 9732,
+      "minecraft:drop": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:spruce_log": 56
+    }
+  },
+  "DataVersion": 4790
+}

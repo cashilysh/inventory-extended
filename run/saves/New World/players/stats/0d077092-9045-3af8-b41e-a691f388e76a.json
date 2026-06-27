@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:zombie_horse_spawn_egg": 12,
+      "minecraft:dirt_path": 7
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 764,
+      "minecraft:fall_one_cm": 260,
+      "minecraft:walk_one_cm": 573,
+      "minecraft:total_world_time": 977,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 83,
+      "minecraft:damage_taken": 110,
+      "minecraft:play_time": 764,
+      "minecraft:jump": 18,
+      "minecraft:time_since_death": 764
+    }
+  },
+  "DataVersion": 4790
+}

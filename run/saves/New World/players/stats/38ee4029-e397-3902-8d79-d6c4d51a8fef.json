@@ -1,0 +1,43 @@
+{
+  "stats": {
+    "minecraft:dropped": {
+      "minecraft:chiseled_bookshelf": 1,
+      "minecraft:dirt_path": 1,
+      "minecraft:pink_shulker_box": 1,
+      "minecraft:bookshelf": 4
+    },
+    "minecraft:used": {
+      "minecraft:pink_shulker_box": 1,
+      "minecraft:bookshelf": 11,
+      "minecraft:chiseled_bookshelf": 1,
+      "minecraft:spruce_fence_gate": 2,
+      "minecraft:birch_fence_gate": 3,
+      "minecraft:dirt_path": 15,
+      "minecraft:pointed_dripstone": 1,
+      "minecraft:oak_door": 1
+    },
+    "minecraft:mined": {
+      "minecraft:dirt_path": 1
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 3317,
+      "minecraft:walk_one_cm": 2183,
+      "minecraft:total_world_time": 3343,
+      "minecraft:leave_game": 2,
+      "minecraft:fly_one_cm": 2762,
+      "minecraft:damage_taken": 110,
+      "minecraft:crouch_one_cm": 515,
+      "minecraft:sneak_time": 294,
+      "minecraft:play_time": 3317,
+      "minecraft:jump": 21,
+      "minecraft:time_since_death": 3317,
+      "minecraft:drop": 7
+    },
+    "minecraft:picked_up": {
+      "minecraft:bookshelf": 4,
+      "minecraft:dirt_path": 1,
+      "minecraft:chiseled_bookshelf": 1
+    }
+  },
+  "DataVersion": 4790
+}

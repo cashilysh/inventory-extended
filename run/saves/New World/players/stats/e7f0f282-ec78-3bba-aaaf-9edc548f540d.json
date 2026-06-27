@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:spruce_log": 56,
+      "minecraft:zombie_spawn_egg": 64
+    },
+    "minecraft:dropped": {
+      "minecraft:zombie_spawn_egg": 64,
+      "minecraft:spruce_log": 56
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1393,
+      "minecraft:total_world_time": 1401,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 1393,
+      "minecraft:time_since_death": 1393,
+      "minecraft:drop": 2
+    }
+  },
+  "DataVersion": 4790
+}

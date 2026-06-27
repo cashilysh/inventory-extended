@@ -1,0 +1,17 @@
+{
+  "followRange": 50.0,
+  "movementSpeed": 0.23,
+  "miningSpeed": 1.0,
+  "TargetRange": 15,
+  "BabyZombiesEnabled": false,
+  "TargetBlockParticlesEnabled": false,
+  "TargetBlockPathingParticlesEnabled": false,
+  "FarBlockSearchDistance": 12,
+  "DoorSearchDistance": 12,
+  "EnableToolChance": true,
+  "EnableAlwaysBreakableBlockList": false,
+  "BreakBlocksWithToolsOnly": true,
+  "PickaxeSpawnChance": 30,
+  "AxeSpawnChance": 20,
+  "ShovelSpawnChance": 10
+}

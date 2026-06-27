@@ -1,0 +1,32 @@
+{
+  "values": [
+    {
+      "id": "#c:glass_blocks",
+      "required": false
+    },
+    {
+      "id": "#c:glass_panes",
+      "required": false
+    },
+    {
+      "id": "#minecraft:ice",
+      "required": false
+    },
+    {
+      "id": "minecraft:packed_mud",
+      "required": false
+    },
+    {
+      "id": "#minecraft:wool",
+      "required": false
+    },
+    {
+      "id": "minecraft:cobweb",
+      "required": false
+    },
+    {
+      "id": "#minecraft:leaves",
+      "required": false
+    }
+  ]
+}

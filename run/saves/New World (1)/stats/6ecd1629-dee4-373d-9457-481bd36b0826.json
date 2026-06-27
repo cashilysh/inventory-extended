@@ -1,0 +1,26 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 1564,
+      "minecraft:time_since_rest": 1262,
+      "minecraft:walk_one_cm": 3285,
+      "minecraft:total_world_time": 1269,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 5739,
+      "minecraft:play_time": 1262,
+      "minecraft:jump": 25,
+      "minecraft:time_since_death": 1262,
+      "minecraft:drop": 2
+    },
+    "minecraft:dropped": {
+      "minecraft:iron_chain": 1,
+      "minecraft:light_gray_wool": 1
+    },
+    "minecraft:used": {
+      "minecraft:iron_chain": 8,
+      "minecraft:daylight_detector": 1,
+      "minecraft:light_gray_wool": 2
+    }
+  },
+  "DataVersion": 4671
+}

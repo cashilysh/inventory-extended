@@ -1,0 +1,16 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:chiseled_bookshelf": 2
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 603,
+      "minecraft:walk_one_cm": 42,
+      "minecraft:total_world_time": 609,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 603,
+      "minecraft:time_since_death": 603
+    }
+  },
+  "DataVersion": 4790
+}

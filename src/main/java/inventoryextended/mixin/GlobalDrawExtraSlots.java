@@ -48,6 +48,5 @@ public abstract class GlobalDrawExtraSlots {
     private static int modifyHotbarOffset(int original) {
         return 112; // Replace 58, 112 works good!
     }
-	
-	
+
 }

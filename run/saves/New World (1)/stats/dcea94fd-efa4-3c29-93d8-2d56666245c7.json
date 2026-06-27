@@ -1,0 +1,37 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:oak_planks": 8
+    },
+    "minecraft:used": {
+      "minecraft:crafting_table": 1,
+      "minecraft:chest": 1,
+      "minecraft:enchanting_table": 2,
+      "minecraft:furnace": 1,
+      "minecraft:end_rod": 1,
+      "minecraft:pale_hanging_moss": 5
+    },
+    "minecraft:dropped": {
+      "minecraft:oak_planks": 8
+    },
+    "minecraft:custom": {
+      "minecraft:interact_with_crafting_table": 2,
+      "minecraft:time_since_rest": 4403,
+      "minecraft:walk_one_cm": 6128,
+      "minecraft:leave_game": 6,
+      "minecraft:play_time": 4403,
+      "minecraft:jump": 31,
+      "minecraft:time_since_death": 4403,
+      "minecraft:drop": 1,
+      "minecraft:interact_with_furnace": 1,
+      "minecraft:sprint_one_cm": 613,
+      "minecraft:open_chest": 1,
+      "minecraft:total_world_time": 4435,
+      "minecraft:fly_one_cm": 4933
+    },
+    "minecraft:crafted": {
+      "minecraft:oak_planks": 12
+    }
+  },
+  "DataVersion": 4671
+}

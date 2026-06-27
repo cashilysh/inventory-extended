@@ -1,0 +1,26 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:dirt_path": 1,
+      "minecraft:stone": 65
+    },
+    "minecraft:used": {
+      "minecraft:oak_door": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:stone": 65,
+      "minecraft:dirt_path": 1
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1857,
+      "minecraft:walk_one_cm": 45,
+      "minecraft:total_world_time": 1864,
+      "minecraft:leave_game": 2,
+      "minecraft:play_time": 1857,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 1857,
+      "minecraft:drop": 3
+    }
+  },
+  "DataVersion": 4790
+}

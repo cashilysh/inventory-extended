@@ -1,0 +1,24 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:interact_with_furnace": 1,
+      "minecraft:time_since_rest": 580,
+      "minecraft:walk_one_cm": 1429,
+      "minecraft:total_world_time": 585,
+      "minecraft:leave_game": 1,
+      "minecraft:damage_taken": 28,
+      "minecraft:play_time": 580,
+      "minecraft:damage_dealt": 46,
+      "minecraft:jump": 6,
+      "minecraft:time_since_death": 580
+    },
+    "minecraft:crafted": {
+      "minecraft:cooked_porkchop": 9,
+      "minecraft:air": 0
+    },
+    "minecraft:used": {
+      "minecraft:spruce_door": 1
+    }
+  },
+  "DataVersion": 4790
+}

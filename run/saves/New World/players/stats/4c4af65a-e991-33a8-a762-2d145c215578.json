@@ -1,0 +1,40 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1479,
+      "minecraft:walk_one_cm": 4088,
+      "minecraft:leave_game": 1,
+      "minecraft:damage_taken": 84,
+      "minecraft:play_time": 2047,
+      "minecraft:damage_dealt": 92,
+      "minecraft:jump": 15,
+      "minecraft:time_since_death": 1448,
+      "minecraft:drop": 4,
+      "minecraft:interact_with_furnace": 3,
+      "minecraft:sprint_one_cm": 188,
+      "minecraft:total_world_time": 2727,
+      "minecraft:fly_one_cm": 5315,
+      "minecraft:sneak_time": 1,
+      "minecraft:deaths": 1
+    },
+    "minecraft:killed_by": {
+      "minecraft:zombie": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:obsidian": 1,
+      "minecraft:cooked_porkchop": 5
+    },
+    "minecraft:crafted": {
+      "minecraft:cooked_porkchop": 6,
+      "minecraft:air": 0
+    },
+    "minecraft:used": {
+      "minecraft:furnace": 1
+    },
+    "minecraft:picked_up": {
+      "minecraft:obsidian": 1,
+      "minecraft:cooked_porkchop": 5
+    }
+  },
+  "DataVersion": 4790
+}

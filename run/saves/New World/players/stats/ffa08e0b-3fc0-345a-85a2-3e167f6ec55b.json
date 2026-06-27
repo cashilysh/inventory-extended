@@ -1,0 +1,27 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1562,
+      "minecraft:walk_one_cm": 739,
+      "minecraft:total_world_time": 1628,
+      "minecraft:leave_game": 1,
+      "minecraft:horse_one_cm": 4447,
+      "minecraft:play_time": 1562,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 1562,
+      "minecraft:drop": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:stone": 1
+    },
+    "minecraft:used": {
+      "minecraft:spruce_door": 1,
+      "minecraft:camel_spawn_egg": 1,
+      "minecraft:obsidian": 1
+    },
+    "minecraft:picked_up": {
+      "minecraft:stone": 1
+    }
+  },
+  "DataVersion": 4790
+}

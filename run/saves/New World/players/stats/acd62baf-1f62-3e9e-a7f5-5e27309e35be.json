@@ -1,0 +1,29 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 2198,
+      "minecraft:walk_one_cm": 1322,
+      "minecraft:leave_game": 1,
+      "minecraft:damage_taken": 170,
+      "minecraft:play_time": 2198,
+      "minecraft:damage_dealt": 10,
+      "minecraft:jump": 41,
+      "minecraft:time_since_death": 2198,
+      "minecraft:fall_one_cm": 1360,
+      "minecraft:total_world_time": 2933,
+      "minecraft:fly_one_cm": 2939,
+      "minecraft:crouch_one_cm": 1195,
+      "minecraft:sneak_time": 480
+    },
+    "minecraft:used": {
+      "minecraft:spruce_log": 7,
+      "minecraft:stone": 2,
+      "minecraft:prismarine": 5,
+      "minecraft:zombie_horse_spawn_egg": 2,
+      "minecraft:zombie_spawn_egg": 7,
+      "minecraft:dirt_path": 3,
+      "minecraft:obsidian": 4
+    }
+  },
+  "DataVersion": 4790
+}

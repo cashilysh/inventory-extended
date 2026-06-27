@@ -1,0 +1,31 @@
+{
+  "stats": {
+    "minecraft:crafted": {
+      "minecraft:spruce_planks": 28,
+      "minecraft:crafting_table": 2
+    },
+    "minecraft:used": {
+      "minecraft:chiseled_bookshelf": 2,
+      "minecraft:pointed_dripstone": 2,
+      "minecraft:waxed_exposed_copper_bars": 1,
+      "minecraft:green_banner": 1,
+      "minecraft:obsidian": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:dripstone_block": 1,
+      "minecraft:bookshelf": 2
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 2262,
+      "minecraft:fall_one_cm": 306,
+      "minecraft:walk_one_cm": 1035,
+      "minecraft:total_world_time": 2272,
+      "minecraft:leave_game": 2,
+      "minecraft:play_time": 2262,
+      "minecraft:jump": 5,
+      "minecraft:time_since_death": 2262,
+      "minecraft:drop": 3
+    }
+  },
+  "DataVersion": 4790
+}
