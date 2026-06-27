@@ -4,13 +4,9 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.gui.screens.inventory.CraftingScreen;
-import net.minecraft.client.gui.screens.inventory.FurnaceScreen;
-import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.InventoryMenu;
 
 import java.lang.reflect.Field;
 
@@ -23,7 +19,7 @@ public class RecipeBookButtonGameTest implements FabricClientGameTest {
             singleplayer.getClientLevel().waitForChunksRender();
 
             context.computeOnClient(mc -> {
-                Inventory inv = mc.player.getInventory();
+                var inv = mc.player.getInventory();
                 int containerSize = inv.getContainerSize();
 
                 if (containerSize < 63) {
@@ -31,6 +27,39 @@ public class RecipeBookButtonGameTest implements FabricClientGameTest {
                         "Client inventory containerSize = " + containerSize
                         + " (expected >= 63, mixin may not have applied)");
                 }
+
+                InventoryMenu menu = mc.player.inventoryMenu;
+                if (menu.slots.size() < 73) {
+                    throw new AssertionError(
+                        "Client InventoryMenu slots = " + menu.slots.size()
+                        + " (expected >= 73)");
+                }
+
+                return null;
+            });
+
+            context.computeOnClient(mc -> {
+                InventoryScreen screen = new InventoryScreen(mc.player);
+
+                try {
+                    Field f = AbstractContainerScreen.class
+                            .getDeclaredField("imageHeight");
+                    f.setAccessible(true);
+                    int height = (int) f.get(screen);
+                    if (height != 226) {
+                        throw new AssertionError(
+                            "IncreaseGlobalBackgroundHeight: InventoryScreen imageHeight should be 226, got "
+                            + height);
+                    }
+                } catch (NoSuchFieldException e) {
+                    throw new AssertionError(
+                        "AbstractContainerScreen.imageHeight field not found: "
+                        + e.getMessage());
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(
+                        "Cannot access imageHeight field: " + e.getMessage());
+                }
+
                 return null;
             });
 

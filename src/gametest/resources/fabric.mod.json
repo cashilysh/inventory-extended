@@ -26,7 +26,8 @@
       "inventoryextended.gametest.CreativeHotbarGameTest",
       "inventoryextended.gametest.CreativeInventoryTabGameTest",
       "inventoryextended.gametest.RecipeBookButtonGameTest",
-      "inventoryextended.gametest.ContainerBackgroundGameTest"
+      "inventoryextended.gametest.ContainerBackgroundGameTest",
+      "inventoryextended.gametest.SlotLayoutClientGameTest"
     ]
   },
   "depends": {

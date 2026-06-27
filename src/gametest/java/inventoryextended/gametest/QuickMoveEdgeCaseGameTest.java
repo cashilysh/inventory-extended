@@ -7,6 +7,7 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.FurnaceMenu;
 import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.inventory.DispenserMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.player.Inventory;
@@ -71,11 +72,27 @@ public class QuickMoveEdgeCaseGameTest implements CustomTestMethodInvoker {
         Inventory inv = player.getInventory();
         clearInv(inv);
 
-        inv.setItem(62, new ItemStack(Items.DIAMOND, 1));
+        inv.setItem(62, new ItemStack(Items.NETHER_STAR, 1));
 
         CraftingMenu menu = new CraftingMenu(0, inv);
 
-        menu.quickMoveStack(player, 64);
+        int sourceSlot = -1;
+        for (Slot slot : menu.slots) {
+            if (slot.hasItem() && slot.getItem().is(Items.NETHER_STAR)) {
+                sourceSlot = slot.index;
+                break;
+            }
+        }
+        context.assertTrue(sourceSlot >= 0,
+            "CraftingMenu: must find menu slot containing NETHER_STAR from inv 62");
+
+        menu.quickMoveStack(player, sourceSlot);
+
+        boolean moved = !(menu.getSlot(sourceSlot).hasItem()
+                && menu.getSlot(sourceSlot).getItem().is(Items.NETHER_STAR));
+        context.assertTrue(moved,
+            "CraftingMenu: NETHER_STAR from inv 62 should have moved from slot "
+                    + sourceSlot);
 
         context.succeed();
     }
@@ -96,6 +113,11 @@ public class QuickMoveEdgeCaseGameTest implements CustomTestMethodInvoker {
 
         menu.quickMoveStack(player, 0);
 
+        context.assertTrue(dispenserContainer.getItem(0).is(Items.ARROW)
+                || dispenserContainer.getItem(0).getCount() < 64,
+            "DispenserMenu with full inventory: quick-move should not crash, "
+                    + "ARROW stays or partially moves");
+
         context.succeed();
     }
 
@@ -112,16 +134,24 @@ public class QuickMoveEdgeCaseGameTest implements CustomTestMethodInvoker {
         inv.setItem(9, new ItemStack(Items.COAL, 1));
         menu.quickMoveStack(player, 3);
 
-        clearInv(inv);
+        context.assertTrue(furnaceContainer.getItem(1).is(Items.COAL),
+            "COAL from inv slot 9 (lower boundary) should move to furnace fuel");
+        context.assertTrue(furnaceContainer.getItem(1).getCount() == 1,
+            "Fuel slot should have 1 COAL from lower boundary, got "
+                    + furnaceContainer.getItem(1).getCount());
+
         furnaceContainer.setItem(0, ItemStack.EMPTY);
         furnaceContainer.setItem(1, ItemStack.EMPTY);
+        clearInv(inv);
 
         inv.setItem(62, new ItemStack(Items.COAL, 1));
         menu.quickMoveStack(player, 56);
 
-        context.assertTrue(!furnaceContainer.getItem(1).isEmpty()
-                || inv.getItem(62).isEmpty(),
-            "COAL should have moved from slot 62 to furnace fuel, or stayed");
+        context.assertTrue(furnaceContainer.getItem(1).is(Items.COAL),
+            "COAL from inv slot 62 (upper boundary) should move to furnace fuel");
+        context.assertTrue(furnaceContainer.getItem(1).getCount() == 1,
+            "Fuel slot should have 1 COAL from upper boundary, got "
+                    + furnaceContainer.getItem(1).getCount());
 
         context.succeed();
     }

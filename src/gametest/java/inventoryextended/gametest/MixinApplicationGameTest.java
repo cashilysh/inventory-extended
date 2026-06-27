@@ -18,6 +18,7 @@ import net.minecraft.world.inventory.GrindstoneMenu;
 import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.inventory.DispenserMenu;
 import net.minecraft.world.inventory.CrafterMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -113,48 +114,76 @@ public class MixinApplicationGameTest implements CustomTestMethodInvoker {
             inv.setItem(i, ItemStack.EMPTY);
         }
 
-        inv.setItem(9, new ItemStack(Items.DIAMOND, 1));
-
+        inv.setItem(62, new ItemStack(Items.NETHER_STAR, 1));
         CraftingMenu craftingMenu = new CraftingMenu(0, inv);
-        craftingMenu.quickMoveStack(player, 2);
+        int cSourceSlot = -1;
+        for (Slot slot : craftingMenu.slots) {
+            if (slot.hasItem() && slot.getItem().is(Items.NETHER_STAR)) {
+                cSourceSlot = slot.index;
+                break;
+            }
+        }
+        context.assertTrue(cSourceSlot >= 0,
+            "CraftingMenu: must find menu slot for inv 62");
+        craftingMenu.quickMoveStack(player, cSourceSlot);
+        boolean netherStarMoved = !(craftingMenu.getSlot(cSourceSlot).hasItem()
+                && craftingMenu.getSlot(cSourceSlot).getItem().is(Items.NETHER_STAR));
+        context.assertTrue(netherStarMoved,
+            "CraftingMenu: NETHER_STAR from inv 62 should move");
 
-        BeaconMenu beaconMenu = new BeaconMenu(0,
-                new SimpleContainer(1), new SimpleContainerData(3),
-                ContainerLevelAccess.NULL);
+        SimpleContainer beaconCont = new SimpleContainer(1);
+        BeaconMenu beaconMenu = new BeaconMenu(0, beaconCont,
+                new SimpleContainerData(3), ContainerLevelAccess.NULL);
         beaconMenu.quickMoveStack(player, 0);
 
-        BrewingStandMenu brewingMenu = new BrewingStandMenu(0, inv,
-                new SimpleContainer(5), new SimpleContainerData(2));
-        brewingMenu.quickMoveStack(player, 5);
+        inv.setItem(62, new ItemStack(Items.BLAZE_POWDER, 1));
+        SimpleContainer brewCont = new SimpleContainer(5);
+        BrewingStandMenu brewingMenu = new BrewingStandMenu(0, inv, brewCont,
+                new SimpleContainerData(2));
+        brewingMenu.quickMoveStack(player, 58);
+        context.assertTrue(brewCont.getItem(4).is(Items.BLAZE_POWDER),
+            "BrewingStandMenu: BLAZE_POWDER from inv 62 should move to fuel");
 
+        inv.setItem(62, new ItemStack(Items.STONE, 1));
         StonecutterMenu stonecutterMenu = new StonecutterMenu(0, inv,
                 ContainerLevelAccess.NULL);
-        stonecutterMenu.quickMoveStack(player, 2);
+        stonecutterMenu.quickMoveStack(player, 55);
 
+        inv.setItem(62, new ItemStack(Items.STRING, 1));
         LoomMenu loomMenu = new LoomMenu(0, inv, ContainerLevelAccess.NULL);
-        loomMenu.quickMoveStack(player, 4);
+        loomMenu.quickMoveStack(player, 57);
 
+        inv.setItem(62, new ItemStack(Items.LAPIS_LAZULI, 1));
         EnchantmentMenu enchantMenu = new EnchantmentMenu(0, inv,
                 ContainerLevelAccess.NULL);
-        enchantMenu.quickMoveStack(player, 2);
+        enchantMenu.quickMoveStack(player, 55);
+        context.assertTrue(enchantMenu.getSlot(1).hasItem(),
+            "EnchantmentMenu: LAPIS from inv 62 should move to lapis slot");
 
+        inv.setItem(62, new ItemStack(Items.PAPER, 1));
         CartographyTableMenu cartoMenu = new CartographyTableMenu(0, inv,
                 ContainerLevelAccess.NULL);
-        cartoMenu.quickMoveStack(player, 3);
+        cartoMenu.quickMoveStack(player, 56);
 
+        inv.setItem(62, new ItemStack(Items.STONE_SWORD, 1));
         GrindstoneMenu grindMenu = new GrindstoneMenu(0, inv,
                 ContainerLevelAccess.NULL);
-        grindMenu.quickMoveStack(player, 3);
+        grindMenu.quickMoveStack(player, 56);
 
+        inv.setItem(62, new ItemStack(Items.EMERALD, 1));
         MerchantMenu merchantMenu = new MerchantMenu(0, inv);
-        merchantMenu.quickMoveStack(player, 3);
+        merchantMenu.quickMoveStack(player, 56);
 
         SimpleContainer dispContainer = new SimpleContainer(9);
+        dispContainer.setItem(0, new ItemStack(Items.ARROW, 1));
         DispenserMenu dispMenu = new DispenserMenu(0, inv, dispContainer);
         dispMenu.quickMoveStack(player, 0);
+        context.assertTrue(dispContainer.getItem(0).isEmpty(),
+            "DispenserMenu: ARROW should move from dispenser to inventory");
 
+        inv.setItem(62, new ItemStack(Items.REDSTONE, 1));
         CrafterMenu crafterMenu = new CrafterMenu(0, inv);
-        crafterMenu.quickMoveStack(player, 54);
+        crafterMenu.quickMoveStack(player, 62);
 
         context.succeed();
     }

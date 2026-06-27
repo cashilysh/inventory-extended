@@ -66,13 +66,15 @@ public class ConstantBoundaryGameTest {
     }
 
     @Test
-    void testInventoryConstructorPreservesIds() {
-        try {
-            java.lang.reflect.Constructor<?> ctor =
-                    Inventory.class.getDeclaredConstructors()[0];
-            ctor.setAccessible(true);
-        } catch (Exception e) {
-            fail("Inventory class should be accessible: " + e.getMessage());
-        }
+    void testInventoryConstructorExists() {
+        java.lang.reflect.Constructor<?>[] ctors = Inventory.class.getDeclaredConstructors();
+        assertTrue(ctors.length >= 1,
+            "Inventory must have at least one declared constructor");
+
+        java.lang.reflect.Constructor<?> ctor = ctors[0];
+        ctor.setAccessible(true);
+        Class<?>[] paramTypes = ctor.getParameterTypes();
+        assertTrue(paramTypes.length >= 1,
+            "Inventory constructor must take at least 1 parameter");
     }
 }

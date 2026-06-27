@@ -6,6 +6,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.FurnaceMenu;
 import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.player.Inventory;
@@ -100,11 +101,27 @@ public class QuickMoveGameTest implements CustomTestMethodInvoker {
             inv.setItem(i, ItemStack.EMPTY);
         }
 
-        inv.setItem(62, new ItemStack(Items.DIAMOND, 1));
+        inv.setItem(62, new ItemStack(Items.NETHER_STAR, 1));
 
         CraftingMenu menu = new CraftingMenu(0, inv);
 
-        menu.quickMoveStack(player, 64);
+        int sourceSlot = -1;
+        for (Slot slot : menu.slots) {
+            if (slot.hasItem() && slot.getItem().is(Items.NETHER_STAR)) {
+                sourceSlot = slot.index;
+                break;
+            }
+        }
+        context.assertTrue(sourceSlot >= 0,
+            "CraftingMenu: must find menu slot containing NETHER_STAR from inv 62");
+
+        menu.quickMoveStack(player, sourceSlot);
+
+        boolean moved = !(menu.getSlot(sourceSlot).hasItem()
+                && menu.getSlot(sourceSlot).getItem().is(Items.NETHER_STAR));
+        context.assertTrue(moved,
+            "CraftingMenu: NETHER_STAR from inv 62 should have moved from slot "
+                    + sourceSlot);
 
         context.succeed();
     }

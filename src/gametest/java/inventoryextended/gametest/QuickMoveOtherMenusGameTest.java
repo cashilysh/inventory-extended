@@ -3,7 +3,19 @@ package inventoryextended.gametest;
 import java.lang.reflect.Method;
 
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.BeaconMenu;
+import net.minecraft.world.inventory.BrewingStandMenu;
+import net.minecraft.world.inventory.CartographyTableMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.CrafterMenu;
+import net.minecraft.world.inventory.DispenserMenu;
+import net.minecraft.world.inventory.EnchantmentMenu;
+import net.minecraft.world.inventory.GrindstoneMenu;
+import net.minecraft.world.inventory.HorseInventoryMenu;
+import net.minecraft.world.inventory.LoomMenu;
+import net.minecraft.world.inventory.MerchantMenu;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.player.Inventory;
@@ -34,6 +46,10 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         HORSE_TYPE = type;
     }
 
+    public static net.minecraft.world.entity.EntityType<?> getHorseType() {
+        return HORSE_TYPE;
+    }
+
     @GameTest
     public void testBeaconQuickMove(GameTestHelper context) {
         var player = context.makeMockPlayer(GameType.SURVIVAL);
@@ -45,6 +61,9 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
                 new SimpleContainerData(3), ContainerLevelAccess.NULL);
 
         menu.quickMoveStack(player, 0);
+
+        context.assertTrue(menu.slots.size() >= 1,
+            "BeaconMenu must have at least 1 slot");
 
         context.succeed();
     }
@@ -59,14 +78,11 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         BrewingStandMenu menu = new BrewingStandMenu(0, inv,
                 brewingContainer, new SimpleContainerData(2));
 
-        inv.setItem(9, new ItemStack(Items.BLAZE_POWDER, 1));
-        menu.quickMoveStack(player, 5);
+        inv.setItem(62, new ItemStack(Items.BLAZE_POWDER, 2));
+        menu.quickMoveStack(player, 58);
 
-        boolean moved = brewingContainer.getItem(4).is(Items.BLAZE_POWDER)
-                || !inv.getItem(9).is(Items.BLAZE_POWDER);
-
-        context.assertTrue(moved,
-            "BLAZE_POWDER should have moved from inventory to brewing stand, or stayed in place (valid behaviour)");
+        context.assertTrue(brewingContainer.getItem(4).is(Items.BLAZE_POWDER),
+            "BrewingStandMenu: BLAZE_POWDER from inv slot 62 should move to fuel slot (slot 4)");
 
         context.succeed();
     }
@@ -79,12 +95,16 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         SimpleContainer container = new SimpleContainer(2);
         container.setItem(0, new ItemStack(Items.STONE, 1));
-
         StonecutterMenu menu = new StonecutterMenu(0, inv,
                 ContainerLevelAccess.NULL);
 
-        inv.setItem(9, new ItemStack(Items.STONE, 1));
-        menu.quickMoveStack(player, 2);
+        inv.setItem(62, new ItemStack(Items.STONE, 3));
+        menu.quickMoveStack(player, 55);
+
+        boolean stoneMoved = !inv.getItem(62).is(Items.STONE)
+                || inv.getItem(62).getCount() < 3;
+        context.assertTrue(stoneMoved,
+            "StonecutterMenu: STONE from inv slot 62 should have moved");
 
         context.succeed();
     }
@@ -97,8 +117,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         LoomMenu menu = new LoomMenu(0, inv, ContainerLevelAccess.NULL);
 
-        inv.setItem(10, new ItemStack(Items.STRING, 1));
-        menu.quickMoveStack(player, 4);
+        inv.setItem(62, new ItemStack(Items.STRING, 2));
+        menu.quickMoveStack(player, 57);
+
+        boolean stringMoved = !inv.getItem(62).is(Items.STRING)
+                || inv.getItem(62).getCount() < 2;
+        context.assertTrue(stringMoved,
+            "LoomMenu: STRING from inv slot 62 should have moved");
 
         context.succeed();
     }
@@ -112,8 +137,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         EnchantmentMenu menu = new EnchantmentMenu(0, inv,
                 ContainerLevelAccess.NULL);
 
-        inv.setItem(9, new ItemStack(Items.LAPIS_LAZULI, 1));
-        menu.quickMoveStack(player, 2);
+        inv.setItem(62, new ItemStack(Items.LAPIS_LAZULI, 4));
+        menu.quickMoveStack(player, 55);
+
+        boolean lapisMovedToSlot1 = menu.getSlot(1).hasItem()
+                && menu.getSlot(1).getItem().is(Items.LAPIS_LAZULI);
+        context.assertTrue(lapisMovedToSlot1,
+            "EnchantmentMenu: LAPIS_LAZULI from inv slot 62 should move to lapis slot");
 
         context.succeed();
     }
@@ -127,8 +157,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         CartographyTableMenu menu = new CartographyTableMenu(0, inv,
                 ContainerLevelAccess.NULL);
 
-        inv.setItem(9, new ItemStack(Items.PAPER, 1));
-        menu.quickMoveStack(player, 3);
+        inv.setItem(62, new ItemStack(Items.PAPER, 1));
+        menu.quickMoveStack(player, 56);
+
+        boolean paperMoved = !inv.getItem(62).is(Items.PAPER)
+                || inv.getItem(62).getCount() < 1;
+        context.assertTrue(paperMoved,
+            "CartographyTableMenu: PAPER from inv slot 62 should have moved");
 
         context.succeed();
     }
@@ -142,8 +177,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         GrindstoneMenu menu = new GrindstoneMenu(0, inv,
                 ContainerLevelAccess.NULL);
 
-        inv.setItem(10, new ItemStack(Items.STONE_SWORD, 1));
-        menu.quickMoveStack(player, 3);
+        inv.setItem(62, new ItemStack(Items.STONE_SWORD, 1));
+        menu.quickMoveStack(player, 56);
+
+        boolean swordMoved = !inv.getItem(62).is(Items.STONE_SWORD)
+                || inv.getItem(62).getCount() < 1;
+        context.assertTrue(swordMoved,
+            "GrindstoneMenu: STONE_SWORD from inv slot 62 should have moved");
 
         context.succeed();
     }
@@ -156,8 +196,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         MerchantMenu menu = new MerchantMenu(0, inv);
 
-        inv.setItem(9, new ItemStack(Items.EMERALD, 1));
-        menu.quickMoveStack(player, 3);
+        inv.setItem(62, new ItemStack(Items.EMERALD, 1));
+        menu.quickMoveStack(player, 56);
+
+        boolean emeraldMoved = !inv.getItem(62).is(Items.EMERALD)
+                || inv.getItem(62).getCount() < 1;
+        context.assertTrue(emeraldMoved,
+            "MerchantMenu: EMERALD from inv slot 62 should have moved");
 
         context.succeed();
     }
@@ -176,7 +221,7 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         menu.quickMoveStack(player, 0);
 
         context.assertTrue(dispenserContainer.getItem(0).isEmpty(),
-            "ARROW should have moved from dispenser slot 0 to inventory");
+            "DispenserMenu: ARROW should have moved from dispenser slot 0 to inventory");
 
         context.succeed();
     }
@@ -189,8 +234,13 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         CrafterMenu menu = new CrafterMenu(0, inv);
 
-        inv.setItem(0, new ItemStack(Items.REDSTONE, 1));
-        menu.quickMoveStack(player, 54);
+        inv.setItem(62, new ItemStack(Items.REDSTONE, 1));
+        menu.quickMoveStack(player, 62);
+
+        boolean redstoneMoved = !inv.getItem(62).is(Items.REDSTONE)
+                || inv.getItem(62).getCount() < 1;
+        context.assertTrue(redstoneMoved,
+            "CrafterMenu: REDSTONE from inv slot 62 should have moved to crafter grid");
 
         context.succeed();
     }
@@ -205,11 +255,14 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
                 context.spawn(HORSE_TYPE, net.minecraft.core.BlockPos.ZERO);
 
         SimpleContainer saddleContainer = new SimpleContainer(1);
+        saddleContainer.setItem(0, new ItemStack(Items.SADDLE, 1));
         HorseInventoryMenu menu = new HorseInventoryMenu(0, inv,
                 saddleContainer, horse, 1);
 
-        inv.setItem(0, new ItemStack(Items.SADDLE, 1));
-        menu.quickMoveStack(player, 1);
+        menu.quickMoveStack(player, 0);
+
+        context.assertTrue(menu.slots.size() >= 1,
+            "HorseInventoryMenu must have at least 1 slot");
 
         context.succeed();
     }
