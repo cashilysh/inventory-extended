@@ -1,7 +1,9 @@
 package inventoryextended.mixin;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.BeaconScreen;
+import net.minecraft.client.gui.screens.inventory.HopperScreen;
+import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
 
@@ -37,7 +39,8 @@ public abstract class IncreaseGlobalBackgroundHeight {
 			index = 3  // 0=font, 1=text, 2=x, 3=y, 4=color, 5=shadow
 	)
 	private int adjustInventoryLabelY(int originalY) {
-		return originalY - 58;
+		Object self = (Object) this;
+		return originalY - (self instanceof ShulkerBoxScreen || self instanceof HopperScreen || self instanceof BeaconScreen ? 52 : 58);
 	}
 	
 

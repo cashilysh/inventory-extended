@@ -228,7 +228,7 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 
 **Symptom**: Item appears in creative hotbar client-side, but placing blocks uses old item, and relogging restores old item.
 
-**Root cause — three independent failures**:
+**Root cause — four independent failures**:
 
 1. **`ServerGamePacketListenerImpl.handleSetCreativeModeSlot` has hardcoded `slotNum <= 45`**. The vanilla `InventoryMenu` has 46 slots (max index 45). The modded `InventoryMenu` has 73 slots (max index 72, hotbar at 63–71). Any `ServerboundSetCreativeModeSlotPacket` with a slot index > 45 is silently dropped by the server. **Fix**: `FixCreativeSlotRangeCheck`.
 
@@ -240,6 +240,8 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
    - **Fix**: `syncCreativeHotbarSlot` TAIL inject calls `handleCreativeModeItemAdd(stack, 63+containerSlot)` directly, sending `ServerboundSetCreativeModeSlotPacket` and bypassing both broken broadcast paths
 
 3. **`handleHotbarLoadOrSave` and `slotClicked` quick-craft hotbar save use `36+i`**. Both need the +27 offset to use `63+i` instead. **Fix**: `fixCreativeHotbarSync` (for `handleHotbarLoadOrSave`) and `fixSlotClickedHotbarSave` (for the `36` constant in `slotClicked`).
+
+4. **`syncCreativeHotbarSlot` fires for `CustomCreativeSlot` clicks too**. The `@Inject` on `slotClicked` at TAIL fires on every slot click — not just hotbar slots. `CustomCreativeSlot` (creative grid slots 0–44) have `getContainerSlot()` returning 0–44. For slots 0–8, the `containerSlot >= 0 && containerSlot < 9` check passes, and the method sends `handleCreativeModeItemAdd(creativeGridItem, 63+containerSlot)` — overwriting a hotbar slot with a random creative grid item. **Fix**: `syncCreativeHotbarSlot` now checks `slot.container != mc.player.getInventory()`. Hotbar `Slot` instances use player inventory as container; `CustomCreativeSlot` uses the static `CONTAINER` field (a `SimpleContainer`).
 
 ### Bug B: Creative inventory tab shows only 27 slots, extra slots overlap hotbar
 

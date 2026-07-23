@@ -1,0 +1,29 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 2564,
+      "minecraft:walk_one_cm": 3206,
+      "minecraft:total_world_time": 2581,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 716,
+      "minecraft:play_time": 2564,
+      "minecraft:jump": 3,
+      "minecraft:time_since_death": 2564
+    },
+    "minecraft:used": {
+      "minecraft:oak_fence": 2,
+      "minecraft:oak_button": 1,
+      "minecraft:jungle_planks": 1,
+      "minecraft:stripped_birch_log": 1,
+      "minecraft:chest": 2,
+      "minecraft:spruce_trapdoor": 1,
+      "minecraft:spruce_stairs": 4,
+      "minecraft:spruce_fence_gate": 2,
+      "minecraft:oak_fence_gate": 3,
+      "minecraft:birch_wood": 1,
+      "minecraft:spruce_door": 3,
+      "minecraft:shulker_box": 10
+    }
+  },
+  "DataVersion": 4903
+}

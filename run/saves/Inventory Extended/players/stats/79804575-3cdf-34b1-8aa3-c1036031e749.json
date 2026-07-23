@@ -1,0 +1,30 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:interact_with_crafting_table": 1,
+      "minecraft:talked_to_villager": 1,
+      "minecraft:time_since_rest": 976,
+      "minecraft:inspect_dropper": 1,
+      "minecraft:walk_one_cm": 2225,
+      "minecraft:leave_game": 1,
+      "minecraft:horse_one_cm": 13,
+      "minecraft:play_time": 976,
+      "minecraft:open_shulker_box": 1,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 976,
+      "minecraft:open_barrel": 2,
+      "minecraft:interact_with_furnace": 1,
+      "minecraft:open_chest": 2,
+      "minecraft:interact_with_smithing_table": 1,
+      "minecraft:inspect_dispenser": 1,
+      "minecraft:inspect_hopper": 1,
+      "minecraft:total_world_time": 985,
+      "minecraft:fly_one_cm": 187,
+      "minecraft:walk_on_water_one_cm": 21,
+      "minecraft:interact_with_stonecutter": 1,
+      "minecraft:interact_with_grindstone": 1,
+      "minecraft:interact_with_loom": 2
+    }
+  },
+  "DataVersion": 4790
+}

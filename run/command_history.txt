@@ -1,0 +1,3 @@
+/gamerule keep_inventory true
+/time set night
+/time set day

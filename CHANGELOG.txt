@@ -3,6 +3,15 @@ Dependencies:
 P7dR8mSH
 
 
+1.1.2
+
+- Fixed Shulkerbox GUI
+- Fixed Hopper GUI (text position)
+- Fixed Villager GUI
+- Added nautilus GUI
+- Improved Creative Hotbar sync further
+
+
 1.1.1
 
 - Fixed the quick-move functions

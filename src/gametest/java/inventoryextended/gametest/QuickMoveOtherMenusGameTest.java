@@ -34,8 +34,9 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
         net.minecraft.world.entity.EntityType<?> type;
         try {
             type = (net.minecraft.world.entity.EntityType<?>)
-                net.minecraft.world.entity.EntityTypes.class.getField("HORSE").get(null);
-        } catch (Exception e) {
+                Class.forName("net.minecraft.world.entity.EntityTypes").getField("HORSE").get(null);
+        } catch (ClassNotFoundException | NoSuchFieldException
+                | IllegalAccessException e) {
             try {
                 type = (net.minecraft.world.entity.EntityType<?>)
                     net.minecraft.world.entity.EntityType.class.getField("HORSE").get(null);

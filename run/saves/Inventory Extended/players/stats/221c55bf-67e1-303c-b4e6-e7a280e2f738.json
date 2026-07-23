@@ -1,0 +1,34 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:rail": 1
+    },
+    "minecraft:used": {
+      "minecraft:oak_fence": 23,
+      "minecraft:villager_spawn_egg": 1,
+      "minecraft:horse_spawn_egg": 1,
+      "minecraft:composter": 3,
+      "minecraft:rail": 1
+    },
+    "minecraft:dropped": {
+      "minecraft:rail": 1
+    },
+    "minecraft:custom": {
+      "minecraft:talked_to_villager": 2,
+      "minecraft:time_since_rest": 3614,
+      "minecraft:walk_one_cm": 5154,
+      "minecraft:leave_game": 1,
+      "minecraft:horse_one_cm": 2449,
+      "minecraft:play_time": 3614,
+      "minecraft:damage_dealt": 20,
+      "minecraft:jump": 9,
+      "minecraft:time_since_death": 3614,
+      "minecraft:drop": 1,
+      "minecraft:total_world_time": 4010,
+      "minecraft:fly_one_cm": 560,
+      "minecraft:crouch_one_cm": 19,
+      "minecraft:sneak_time": 22
+    }
+  },
+  "DataVersion": 4903
+}

@@ -79,10 +79,12 @@ public abstract class CreativeInventoryMixin {
         if (self.isInventoryOpen()) return;
         if (slot == null) return;
 
+        Minecraft mc = Minecraft.getInstance();
+        if (slot.container != mc.player.getInventory()) return;
+
         int containerSlot = slot.getContainerSlot();
         if (containerSlot >= 0 && containerSlot < 9) {
             ItemStack stack = slot.getItem().copy();
-            Minecraft mc = Minecraft.getInstance();
             mc.gameMode.handleCreativeModeItemAdd(
                     stack, 63 + containerSlot);
         }

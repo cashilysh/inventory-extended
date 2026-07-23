@@ -1,0 +1,59 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:wheat_seeds": 1
+    },
+    "minecraft:used": {
+      "minecraft:oak_fence": 29,
+      "minecraft:birch_door": 6,
+      "minecraft:loom": 1,
+      "minecraft:observer": 3,
+      "minecraft:horse_spawn_egg": 1,
+      "minecraft:shulker_box": 6,
+      "minecraft:furnace": 1,
+      "minecraft:barrel": 1,
+      "minecraft:dirt": 2,
+      "minecraft:furnace_minecart": 2,
+      "minecraft:chest_minecart": 1,
+      "minecraft:dispenser": 1,
+      "minecraft:crafter": 1,
+      "minecraft:smithing_table": 1,
+      "minecraft:rail": 4,
+      "minecraft:waxed_copper_chest": 1,
+      "minecraft:hopper": 1,
+      "minecraft:lectern": 3,
+      "minecraft:villager_spawn_egg": 1,
+      "minecraft:note_block": 1,
+      "minecraft:chest": 5,
+      "minecraft:crafting_table": 1,
+      "minecraft:chiseled_bookshelf": 3,
+      "minecraft:enchanting_table": 1,
+      "minecraft:jukebox": 1,
+      "minecraft:hopper_minecart": 1,
+      "minecraft:dropper": 1
+    },
+    "minecraft:custom": {
+      "minecraft:interact_with_crafting_table": 1,
+      "minecraft:time_since_rest": 7367,
+      "minecraft:inspect_dropper": 1,
+      "minecraft:walk_one_cm": 14834,
+      "minecraft:leave_game": 2,
+      "minecraft:damage_dealt": 10,
+      "minecraft:play_time": 7367,
+      "minecraft:open_shulker_box": 3,
+      "minecraft:jump": 17,
+      "minecraft:time_since_death": 7367,
+      "minecraft:open_barrel": 1,
+      "minecraft:interact_with_furnace": 3,
+      "minecraft:sprint_one_cm": 135,
+      "minecraft:open_chest": 6,
+      "minecraft:interact_with_smithing_table": 1,
+      "minecraft:inspect_dispenser": 1,
+      "minecraft:inspect_hopper": 5,
+      "minecraft:total_world_time": 8188,
+      "minecraft:fly_one_cm": 3374,
+      "minecraft:interact_with_loom": 1
+    }
+  },
+  "DataVersion": 4903
+}

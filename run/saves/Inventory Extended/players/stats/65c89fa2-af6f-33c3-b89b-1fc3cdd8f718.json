@@ -1,0 +1,17 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:chest": 5,
+      "minecraft:shulker_box": 3
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 795,
+      "minecraft:walk_one_cm": 1159,
+      "minecraft:total_world_time": 824,
+      "minecraft:leave_game": 2,
+      "minecraft:play_time": 795,
+      "minecraft:time_since_death": 795
+    }
+  },
+  "DataVersion": 4903
+}

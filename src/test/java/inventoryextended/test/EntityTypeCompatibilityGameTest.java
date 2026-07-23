@@ -21,7 +21,8 @@ public class EntityTypeCompatibilityGameTest {
         Object type = null;
 
         try {
-            Class<?> entityTypesClass = net.minecraft.world.entity.EntityTypes.class;
+            Class<?> entityTypesClass = Class.forName(
+                    "net.minecraft.world.entity.EntityTypes");
             Field horseField = entityTypesClass.getField("HORSE");
             type = horseField.get(null);
         } catch (Exception e) {
@@ -46,7 +47,8 @@ public class EntityTypeCompatibilityGameTest {
         for (String typeName : horseTypes) {
             Object type = null;
             try {
-                Class<?> entityTypesClass = net.minecraft.world.entity.EntityTypes.class;
+                Class<?> entityTypesClass = Class.forName(
+                        "net.minecraft.world.entity.EntityTypes");
                 Field field = entityTypesClass.getField(typeName);
                 type = field.get(null);
             } catch (Exception e) {

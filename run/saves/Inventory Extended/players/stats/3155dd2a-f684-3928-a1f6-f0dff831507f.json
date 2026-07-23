@@ -1,0 +1,54 @@
+{
+  "stats": {
+    "minecraft:dropped": {
+      "minecraft:pufferfish_bucket": 1,
+      "minecraft:lead": 1,
+      "minecraft:shulker_box": 1
+    },
+    "minecraft:custom": {
+      "minecraft:talked_to_villager": 6,
+      "minecraft:time_since_rest": 6136,
+      "minecraft:leave_game": 3,
+      "minecraft:open_shulker_box": 1,
+      "minecraft:time_since_death": 6136,
+      "minecraft:interact_with_furnace": 2,
+      "minecraft:interact_with_smithing_table": 1,
+      "minecraft:inspect_dispenser": 1,
+      "minecraft:total_world_time": 6176,
+      "minecraft:crouch_one_cm": 21,
+      "minecraft:interact_with_stonecutter": 2,
+      "minecraft:interact_with_loom": 3,
+      "minecraft:interact_with_crafting_table": 1,
+      "minecraft:inspect_dropper": 1,
+      "minecraft:nautilus_one_cm": 1698,
+      "minecraft:walk_one_cm": 5491,
+      "minecraft:horse_one_cm": 18,
+      "minecraft:walk_under_water_one_cm": 58,
+      "minecraft:damage_dealt": 10,
+      "minecraft:play_time": 6136,
+      "minecraft:jump": 13,
+      "minecraft:drop": 3,
+      "minecraft:open_barrel": 1,
+      "minecraft:open_chest": 3,
+      "minecraft:fall_one_cm": 212,
+      "minecraft:fly_one_cm": 7050,
+      "minecraft:walk_on_water_one_cm": 50,
+      "minecraft:sneak_time": 55,
+      "minecraft:interact_with_grindstone": 1
+    },
+    "minecraft:picked_up": {
+      "minecraft:lead": 2,
+      "minecraft:saddle": 1
+    },
+    "minecraft:used": {
+      "minecraft:stonecutter": 1,
+      "minecraft:water_bucket": 4,
+      "minecraft:loom": 3,
+      "minecraft:nautilus_spawn_egg": 2,
+      "minecraft:grindstone": 1,
+      "minecraft:shulker_box": 1,
+      "minecraft:oak_log": 11
+    }
+  },
+  "DataVersion": 4903
+}
