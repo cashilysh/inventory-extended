@@ -93,6 +93,30 @@ public class QuickMoveGameTest implements CustomTestMethodInvoker {
     }
 
     @GameTest
+    public void testFurnaceQuickMoveComponentFuel(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            inv.setItem(i, ItemStack.EMPTY);
+        }
+
+        SimpleContainer furnaceContainer = new SimpleContainer(3);
+        FurnaceMenu menu = new FurnaceMenu(0, inv, furnaceContainer,
+                new SimpleContainerData(4));
+
+        // 26.3 identifies furnace fuel via the minecraft:cooking_fuel data component
+        inv.setItem(62, new ItemStack(Items.BLAZE_ROD, 2));
+
+        menu.quickMoveStack(player, 56);
+
+        context.assertTrue(furnaceContainer.getItem(1).is(Items.BLAZE_ROD),
+            "BLAZE_ROD from extended inv 62 should move to furnace fuel slot via cooking_fuel");
+
+        context.succeed();
+    }
+
+    @GameTest
     public void testCraftingQuickMoveRange(GameTestHelper context) {
         var player = context.makeMockPlayer(GameType.SURVIVAL);
         Inventory inv = player.getInventory();

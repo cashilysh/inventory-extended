@@ -10,7 +10,7 @@ public class InventoryScreenshotTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getClientLevel().waitForChunksRender();
+            ClientTestCompat.waitForChunksRender(singleplayer);
 
             context.takeScreenshot("inventoryextended-singleplayer");
         }

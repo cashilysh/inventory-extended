@@ -16,7 +16,7 @@ public class ContainerBackgroundGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getClientLevel().waitForChunksRender();
+            ClientTestCompat.waitForChunksRender(singleplayer);
 
             context.computeOnClient(mc -> {
                 if (mc.player == null) {
@@ -52,7 +52,7 @@ public class ContainerBackgroundGameTest implements FabricClientGameTest {
 
                     if (height != 226) {
                         throw new AssertionError(
-                            "IncreaseGlobalBackgroundHeight: imageHeight should be 226, got "
+                            "ContainerScreenHeight: imageHeight should be 226, got "
                             + height);
                     }
                 } catch (NoSuchFieldException e) {

@@ -1,0 +1,29 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:anvil": 1
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 2116,
+      "minecraft:inspect_dropper": 1,
+      "minecraft:walk_one_cm": 6346,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 2116,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 2116,
+      "minecraft:drop": 1,
+      "minecraft:sprint_one_cm": 41,
+      "minecraft:open_chest": 1,
+      "minecraft:interact_with_smithing_table": 3,
+      "minecraft:inspect_hopper": 1,
+      "minecraft:total_world_time": 2121,
+      "minecraft:interact_with_anvil": 1,
+      "minecraft:interact_with_grindstone": 1,
+      "minecraft:interact_with_loom": 2
+    },
+    "minecraft:dropped": {
+      "minecraft:anvil": 1
+    }
+  },
+  "DataVersion": 5023
+}

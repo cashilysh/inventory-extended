@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import inventoryextended.mixin.SlotAccessor;
+import inventoryextended.mixin.core.SlotAccessor;
 
 import java.lang.reflect.Field;
 
@@ -17,7 +17,7 @@ public class SlotLayoutClientGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getClientLevel().waitForChunksRender();
+            ClientTestCompat.waitForChunksRender(singleplayer);
 
             context.computeOnClient(mc -> {
                 var player = mc.player;
@@ -71,7 +71,7 @@ public class SlotLayoutClientGameTest implements FabricClientGameTest {
 
                     if (height != 226) {
                         throw new AssertionError(
-                            "IncreaseGlobalBackgroundHeight: imageHeight should be 226, got "
+                            "ContainerScreenHeight: imageHeight should be 226, got "
                             + height);
                     }
                 } catch (NoSuchFieldException e) {

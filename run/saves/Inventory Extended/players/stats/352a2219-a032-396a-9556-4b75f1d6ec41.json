@@ -1,0 +1,26 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:brewing_stand": 2,
+      "minecraft:birch_fence": 3
+    },
+    "minecraft:picked_up": {
+      "minecraft:pufferfish": 1
+    },
+    "minecraft:custom": {
+      "minecraft:interact_with_brewingstand": 2,
+      "minecraft:talked_to_villager": 1,
+      "minecraft:time_since_rest": 1482,
+      "minecraft:walk_one_cm": 3369,
+      "minecraft:total_world_time": 1486,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 3066,
+      "minecraft:sneak_time": 15,
+      "minecraft:play_time": 1482,
+      "minecraft:damage_dealt": 30,
+      "minecraft:jump": 8,
+      "minecraft:time_since_death": 1482
+    }
+  },
+  "DataVersion": 5023
+}

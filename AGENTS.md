@@ -9,14 +9,14 @@
 ./gradlew runclient                              # launch client after build
 ```
 
-Convenience test runner (colored output + clean log):
+Convenience test runner (colored output + clean log). Runs **every version listed in `BUILD ALL.sh`** (currently 26.1.2, 26.2, 26.3):
 ```
-./RUN TESTS.sh         # all tests
-./RUN TESTS.sh unit    # unit tests only
-./RUN TESTS.sh server  # server game tests only
-./RUN TESTS.sh client  # client game tests only
+./RUN TESTS.sh         # all tests, all versions
+./RUN TESTS.sh unit    # unit tests only, all versions
+./RUN TESTS.sh server  # server game tests only, all versions
+./RUN TESTS.sh client  # client game tests only, all versions
 ```
-Supports `-PtargetVersion=` forwarding:
+Restrict to a single version with `-PtargetVersion=`:
 ```
 ./RUN TESTS.sh all -PtargetVersion=26.2
 ```
@@ -28,16 +28,23 @@ Direct Gradle test tasks:
 ./gradlew runClientGameTest # client game tests
 ```
 
-- **Java 25 required** (build fails otherwise). Gradle 9.5.1 via wrapper.
+`BUILD ALL.sh` builds **and runs client game tests** for 26.1.2, 26.2, and 26.3 (client mixins are only applied in a client environment, so this is the only place they are validated per version).
+
+- **Java 25 required** (build fails otherwise). Gradle 9.7.1 via wrapper.
 - Dependencies are resolved **at config-time from live APIs** (meta.fabricmc.net, api.modrinth.com). The build needs internet.
-- Default target version: `26.1.2` (set in `gradle.properties`). Built `fabric.mod.json` may differ due to `editFabricModJson` task.
+- Default target version: `26.3` (set in `gradle.properties`). Built `fabric.mod.json` may differ due to `editFabricModJson` task.
 - Tests require `JAVA_HOME` set (e.g. `export JAVA_HOME=/usr/lib/jvm/java-25-openjdk`). `RUN TESTS.sh` defaults to that path if unset.
-- MC 26.1.2 and 26.2 are both supported. Only known API break: `EntityType.HORSE` → `EntityTypes.HORSE` (handle via reflection in `QuickMoveOtherMenusGameTest`).
+- MC 26.1.2, 26.2, and 26.3 are supported. Known version API differences:
+  - `EntityType.HORSE` → `EntityTypes.HORSE` (26.2+; reflection in `QuickMoveOtherMenusGameTest`).
+  - `TestSingleplayerContext` chunk-wait accessor (client gametest): `getClientLevel()` on 26.1.2 vs `getConnection()` on 26.2+ (`ClientTestCompat`).
+  - `BrewingStandMenu` requires 4 `ContainerData` slots on 26.3 (2 on 26.1.2/26.2); `checkContainerDataCount` only throws when `count < expected`, so tests pass `SimpleContainerData(4)` everywhere.
+  - 26.3 identifies furnace fuel via the `minecraft:cooking_fuel` data component and potion inputs via `PotionIngredient.isPotionInput`.
+  - 26.3 moved `RenderPipelines` to `com.mojang.renderpearl.api.pipeline` and refactored screen click handling (`AbstractContainerScreen.slotClicked(Slot,int,MouseButtonEvent,ContainerInput)` delegates to the old int variant). The mod does not reference either directly.
 
 ## Architecture
 
 - **Fabric mod** using Fabric Loom (`1.16-SNAPSHOT`). Entrypoint: `inventoryextended.InventoryExtended` (implements `ModInitializer`).
-- **All logic is in mixins** (30 total in `src/main/java/inventoryextended/mixin/`). The entrypoint class just logs init. Mixin config at `src/main/resources/inventoryextended.mixins.json`.
+- **All logic is in mixins** (35 total, grouped into `core/`, `quickmove/`, `gui/` under `src/main/java/inventoryextended/mixin/`). The entrypoint class just logs init. Mixin config at `src/main/resources/inventoryextended.mixins.json`.
 - Expands inventory from 36 to 63 slots by modifying constants/slot indices via Mixin (+27 offset throughout).
 
 ## Modded Inventory Layout
@@ -84,17 +91,17 @@ Uses `SlotWrapper` instances wrapping `InventoryMenu` slots — indices match `I
 - **Version-specific overrides**: `src/version_specific/` can hold Java sources that override `src/main/java/` files for specific MC version ranges. The `applyVersionSpecificOverrides` task copies them in before compile and the `buildFinished` hook restores originals. Currently empty — infrastructure exists but no overrides are active.
 - **MC 26.x is unobfuscated** — the output task is `jar`, not `remapJar` (Loom skips remapping).
 - Dependencies are declared as **Modrinth slugs** in `gradle.properties` under `deps.implementation` / `deps.compileOnly` / `deps.localRuntime`, not as standard Maven coordinates.
-- 79 tests total: 15 unit + 59 server game + 5 client game.
+- 102 tests total: 15 unit + 81 server game + 6 client game (plus 1 Fabric API test).
 
 ## Tests
 
-79 tests total, split across three test types:
+102 tests total, split across three test types:
 
 | Type | Qty | Location | Framework |
 |------|-----|----------|-----------|
 | Unit | 15 | `src/test/java/inventoryextended/test/` | Fabric Loader JUnit |
-| Server game | 59 | `src/gametest/java/inventoryextended/gametest/` | Fabric GameTest |
-| Client game | 5 | `src/gametest/java/inventoryextended/gametest/` | Fabric ClientGameTest |
+| Server game | 81 | `src/gametest/java/inventoryextended/gametest/` | Fabric GameTest |
+| Client game | 6 | `src/gametest/java/inventoryextended/gametest/` | Fabric ClientGameTest |
 
 ### Unit tests
 
@@ -110,8 +117,8 @@ Uses `SlotWrapper` instances wrapping `InventoryMenu` slots — indices match `I
 | File | Tests | Coverage |
 |------|-------|----------|
 | `InventorySizeGameTest` | 3 | Container size ≥63, place/retrieve all 63 slots, hotbar range |
-| `QuickMoveGameTest` | 4 | Furnace fuel/ingredient/hotbar quick-move, crafting quick-move |
-| `QuickMoveOtherMenusGameTest` | 11 | Beacon, brewing, stonecutter, loom, enchantment, cartography, grindstone, merchant, dispenser, crafter, horse |
+| `QuickMoveGameTest` | 5 | Furnace fuel/ingredient/hotbar quick-move, component-based fuel (`cooking_fuel`), crafting quick-move |
+| `QuickMoveOtherMenusGameTest` | 21 | Beacon, brewing (fuel + potion input), stonecutter, loom, enchantment, cartography, grindstone, merchant (quick-move + trade from extended row + hotbar + shift-click auto-fill + non-matching fall-through + updated-offer refresh), dispenser, crafter, horse, anvil (extended row + hotbar), smithing (extended row + hotbar) |
 | `ArmorOffhandGameTest` | 4 | Armor slots 63–66, offhand 67, equipping, equipment mapping |
 | `PersistenceGameTest` | 2 | Save/load roundtrip for all 63 slots, extended slots (36, 62) survive |
 | `CreativeExtendedSlotGameTest` | 3 | All 63 main slots writable/readable in creative, InventoryMenu has 73 slots, isHotbarSlot correct range |
@@ -122,7 +129,7 @@ Uses `SlotWrapper` instances wrapping `InventoryMenu` slots — indices match `I
 | `DeathDropGameTest` | 3 | Extended slots (9–62) all accessible, hotbar (0–8) items accessible, armor/offhand slots readable |
 | `CreativeSurvivalTransitionGameTest` | 3 | All 63 slots accessible in creative, all 63 slots in survival, sequential diamond counts |
 | `MixinApplicationGameTest` | 6 | Container size 63, menu slot count 73, isHotbarSlot, EQUIPMENT_SLOT_MAPPING, quick-move, all menu types quick-move |
-| `QuickMoveCoverageGameTest` | 3 | All menu types registered, quick-move doesn't crash, known menus have fix |
+| `QuickMoveCoverageGameTest` | 14 | All menu types registered, quick-move doesn't crash, known menus have fix |
 
 Plus 1 test from Fabric API itself.
 
@@ -135,12 +142,13 @@ Plus 1 test from Fabric API itself.
 | `CreativeInventoryTabGameTest` | 1 | Client-side container size, menu slots, isHotbarSlot, screenshot |
 | `RecipeBookButtonGameTest` | 1 | Client-side container size verify, recipe book button screenshot |
 | `ContainerBackgroundGameTest` | 1 | Client-side container size, extra background screenshot |
+| `SlotLayoutClientGameTest` | 1 | Client-side slot layout (hotbar/inventory Y), imageHeight, SlotAccessor |
 
 ### Key test implementation details
 
 - Mock players created with `makeMockPlayer(GameType.SURVIVAL)` (MC 26.x API; `makeMockServerPlayerInLevel` is deprecated).
 - `net.minecraft.server.Bootstrap.bootStrap()` — correct bootstrap class for MC 26.x.
-- `TestSingleplayerContext` provides `getClientLevel()` (MC 26.1.2+ Fabric API).
+- `TestSingleplayerContext` chunk-wait accessor is version-dependent: `getClientLevel()` on 26.1.2 (fabric-client-gametest-api-v1 5.x) vs `getConnection()` on 26.2+ (6.x). Client tests use `ClientTestCompat.waitForChunksRender(singleplayer)`, which tries `getConnection()` and falls back to `getClientLevel()` via reflection.
 - Static constant fields (`InventoryMenu.INV_SLOT_END`, etc.) cannot be tested directly — `@ModifyConstant` on `<clinit>` doesn't change compile-time constants. Test `isHotbarSlot()` behavior instead.
 - `getContainerSize()` returns 70 (63 main + 4 armor + 1 offhand + 1 body + 1 saddle) — wider than just main inventory.
 - Quick-move tests for restrictive menus use relaxed assertions (verify range doesn't throw, don't check exact destination).
@@ -152,9 +160,9 @@ Some mixins cannot be tested directly due to framework constraints. Their covera
 
 | Mixin | Limitation |
 |-------|-----------|
-| `FixCreativeSlotRangeCheck` (`45`→`72`) | `makeMockPlayer()` returns a mock, not `ServerPlayer`. No `ServerGamePacketListenerImpl` available to call `handleSetCreativeModeSlot`. Verified indirectly via menu slot count ≥73. |
-| `FixSwapOffhandContainer` (`40`→`67`) | Targets `AbstractContainerScreen` (client-only). Server game tests log a "target not found" warning. Covered indirectly by offhand slot index tests. |
-| `FixBookEditScreen` (`40`→`67`) | Targets `BookEditScreen` (client-only). Same as above. Covered indirectly by book slot index tests. |
+| `CreativeSlotRangeCheck` (`45`→`72`) | `makeMockPlayer()` returns a mock, not `ServerPlayer`. No `ServerGamePacketListenerImpl` available to call `handleSetCreativeModeSlot`. Verified indirectly via menu slot count ≥73. |
+| `AbstractContainerScreenOffhandSwap` (`40`→`67`) | Targets `AbstractContainerScreen` (client-only). Server game tests log a "target not found" warning. Covered indirectly by offhand slot index tests. |
+| `BookEditScreenOffhand` (`40`→`67`) | Targets `BookEditScreen` (client-only). Same as above. Covered indirectly by book slot index tests. |
 | Armor/offhand save/load | `inv.save()` serializes `items`, `armor`, and `offhand` as separate NBT arrays. The `ValueOutput.TypedOutputList` approach only captures the `items` list (slots 0–62). Armor (63–66) and offhand (67) items persist correctly through the game's standard NBT serialization (`Inventory`, `ArmorItem`, `OffhandItem` tags) — just not through the `TypedOutputList` test path. Tests verify read/write accessibility instead. |
 
 ### Test infrastructure
@@ -164,61 +172,56 @@ Some mixins cannot be tested directly due to framework constraints. Their covera
 - `RUN TESTS.sh` produces ANSI-colored terminal output and a plain-text `test_results.log` with per-test PASSED/FAILED + failure details.
 - Test names are extracted from `@GameTest` annotations; the script's parser handles `@GameTest(template = "foo")` patterns.
 
-## All Mixins (30 total)
+## All Mixins (35 total, grouped by concern)
 
-### Core inventory expansion
+`src/main/java/inventoryextended/mixin/` is split into three subpackages — `core/`, `quickmove/`, `gui/`. The mixin config keeps `package: inventoryextended.mixin` and uses prefixed entries (e.g. `core.ExtendPlayerInventory`).
+
+### `core/` — slot expansion, layout, and special-case fixes
 | File | Target | Purpose |
 |------|--------|---------|
-| `ExtendPlayerInventory` | `Inventory` | +27 to main size, offhand, armor indices |
-| `RemapPlayerSlots` | `InventoryMenu` | +27 to hotbar/offhand/armor slot constants |
-| `GlobalDrawExtraSlots` | `AbstractContainerMenu` | 3→6 inventory rows, hotbar Y 58→112 |
-| `IncreaseGlobalBackgroundHeight` | `AbstractContainerScreen` | 166→226 bg height, label Y adjust |
-| `SlotAccessor` | `Slot` | Accessors for x/y get/set (with `@Mutable`) |
+| `core.ExtendPlayerInventory` | `Inventory` | +27 to main size, offhand, armor indices |
+| `core.RemapPlayerSlots` | `InventoryMenu` | +27 to hotbar/offhand/armor slot constants |
+| `core.GlobalDrawExtraSlots` | `AbstractContainerMenu` | 3→6 inventory rows, hotbar Y 58→112 |
+| `core.SlotAccessor` | `Slot` | Accessors for x/y get/set (with `@Mutable`) |
+| `core.CreativeModeInventoryScreenMixin` | `CreativeModeInventoryScreen` | Hotbar save/load +27, quick-craft save `36`→`63`, click→server sync, inventory tab reposition, debug logging |
+| `core.CreativeSlotRangeCheck` | `ServerGamePacketListenerImpl` | `45`→`72` creative slot range on server |
+| `core.MerchantMenuTradeRange` | `MerchantMenu` | `tryMoveItems` / `moveFromInventoryToPaymentSlot` inventory range `39`→`66` |
+| `core.PlayerInventoryStorageImplMixin` | `PlayerInventoryStorageImpl` | +27 to fabric transfer API indices |
+| `core.AbstractContainerScreenOffhandSwap` | `AbstractContainerScreen` | `checkHotbarKeyPressed`: `40`→`67` (offhand swap) |
+| `core.ServerGamePacketListenerEditBook` | `ServerGamePacketListenerImpl` | `handleEditBook`: `40`→`67` (offhand slot) |
+| `core.BookEditScreenOffhand` | `BookEditScreen` | `saveChanges`: `40`→`67` (offhand slot) |
 
-### Creative screen
+### `quickmove/` — `quickMoveStack` range fixes (+27 offset)
 | File | Target | Purpose |
 |------|--------|---------|
-| `CreativeInventoryMixin` | `CreativeModeInventoryScreen` | Hotbar save/load +27, quick-craft save `36`→`63`, click→server sync, inventory tab reposition, debug logging |
-| `FixCreativeSlotRangeCheck` | `ServerGamePacketListenerImpl` | `45`→`72` creative slot range on server |
+| `quickmove.CraftingMenuQuickMove` | `CraftingMenu` | `37`→`64`, `46`→`73` |
+| `quickmove.FurnaceMenuQuickMove` | `AbstractFurnaceMenu` | Index adjustments |
+| `quickmove.BeaconMenuQuickMove` | `BeaconMenu` | Index adjustments |
+| `quickmove.BrewingStandMenuQuickMove` | `BrewingStandMenu` | Index adjustments |
+| `quickmove.MerchantMenuQuickMove` | `MerchantMenu` | Index adjustments |
+| `quickmove.StonecutterMenuQuickMove` | `StonecutterMenu` | Index adjustments |
+| `quickmove.LoomMenuQuickMove` | `LoomMenu` | Index adjustments |
+| `quickmove.EnchantmentMenuQuickMove` | `EnchantmentMenu` | Index adjustments |
+| `quickmove.CartographyTableMenuQuickMove` | `CartographyTableMenu` | Index adjustments |
+| `quickmove.GrindstoneMenuQuickMove` | `GrindstoneMenu` | Index adjustments |
+| `quickmove.DispenserMenuQuickMove` | `DispenserMenu` | Index adjustments |
+| `quickmove.CrafterMenuQuickMove` | `CrafterMenu` | Index adjustments |
+| `quickmove.MountInventoryMenuQuickMove` | `AbstractMountInventoryMenu` | `27`→`54` |
+| `quickmove.ItemCombinerMenuQuickMove` | `ItemCombinerMenu` | `getInventorySlotEnd` `27`→`54` (anvil + smithing) |
+| `quickmove.MerchantMenuTradeQuickMove` | `MerchantMenu` | Shift-click a matching item auto-fills payment slot 0/1 (QoL; vanilla only shuffles inv↔hotbar) |
 
-### Recipe book button positions
+### `gui/` — client screens (height, backgrounds, recipe buttons)
 | File | Target | Purpose |
 |------|--------|---------|
-| `PlayerInventoryRecipeButton` | `InventoryScreen` | Recipe book button Y +30 |
-| `CraftingScreenRecipeBookButton` | `CraftingScreen` | Recipe book button Y +30 |
-| `FurnaceScreenRecipeBookButton` | `AbstractFurnaceScreen` | Recipe book button Y +30 |
-
-### Container background drawing
-| File | Target | Purpose |
-|------|--------|---------|
-| `ChestsDrawExtraBackground` | `ContainerScreen` | Extra inventory bg for chests |
-| `BeaconDrawExtraBackground` | `BeaconScreen` | Extra inventory bg for beacon |
-| `HopperDrawExtraBackground` | `HopperScreen` | Extra inventory bg for hopper |
-
-### QuickMove fixes (+27 offset in `quickMoveStack` constants)
-| File | Target | Purpose |
-|------|--------|---------|
-| `FixCraftingMenuQuickMove` | `CraftingMenu` | `37`→`64`, `46`→`73` |
-| `FixFurnaceMenuQuickMove` | `AbstractFurnaceMenu` | Index adjustments |
-| `FixBeaconMenuQuickMove` | `BeaconMenu` | Index adjustments |
-| `FixBrewingStandMenuQuickMove` | `BrewingStandMenu` | Index adjustments |
-| `FixMerchantMenuQuickMove` | `MerchantMenu` | Index adjustments |
-| `FixStonecutterMenuQuickMove` | `StonecutterMenu` | Index adjustments |
-| `FixLoomMenuQuickMove` | `LoomMenu` | Index adjustments |
-| `FixEnchantmentMenuQuickMove` | `EnchantmentMenu` | Index adjustments |
-| `FixCartographyMenuQuickMove` | `CartographyMenu` | Index adjustments |
-| `FixGrindstoneMenuQuickMove` | `GrindstoneMenu` | Index adjustments |
-| `FixDispenserMenuQuickMove` | `DispenserMenu` | Index adjustments |
-| `FixCrafterMenuQuickMove` | `CrafterMenu` | Index adjustments |
-| `FixMountMenuQuickMove` | `AbstractMountInventoryMenu` | `27`→`54` |
-
-### Other fixes
-| File | Target | Purpose |
-|------|--------|---------|
-| `FixPlayerInventoryStorageImpl` | `PlayerInventoryStorageImpl` | +27 to fabric transfer API indices |
-| `FixSwapOffhandContainer` | `AbstractContainerScreen` | `checkHotbarKeyPressed`: `40`→`67` (offhand swap) |
-| `FixHandleEditBook` | `ServerGamePacketListenerImpl` | `handleEditBook`: `40`→`67` (offhand slot) |
-| `FixBookEditScreen` | `BookEditScreen` | `saveChanges`: `40`→`67` (offhand slot) |
+| `gui.ContainerScreenHeight` | `AbstractContainerScreen` | 166→226 bg height, label Y adjust |
+| `gui.ContainerScreenDrawExtraBackground` | `ContainerScreen` | Extra inventory bg for chests |
+| `gui.BeaconDrawExtraBackground` | `BeaconScreen` | Extra inventory bg for beacon |
+| `gui.HopperDrawExtraBackground` | `HopperScreen` | Extra inventory bg for hopper |
+| `gui.MerchantDrawExtraBackground` | `MerchantScreen` | Extra inventory bg for merchant |
+| `gui.ShulkerDrawExtraBackground` | `ShulkerBoxScreen` | Extra inventory bg for shulker box |
+| `gui.InventoryScreenRecipeBookButton` | `InventoryScreen` | Recipe book button Y +30 |
+| `gui.CraftingScreenRecipeBookButton` | `CraftingScreen` | Recipe book button Y +30 |
+| `gui.FurnaceScreenRecipeBookButton` | `AbstractFurnaceScreen` | Recipe book button Y +30 |
 
 ## Creative inventory — full troubleshooting reference
 
@@ -230,7 +233,7 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 
 **Root cause — four independent failures**:
 
-1. **`ServerGamePacketListenerImpl.handleSetCreativeModeSlot` has hardcoded `slotNum <= 45`**. The vanilla `InventoryMenu` has 46 slots (max index 45). The modded `InventoryMenu` has 73 slots (max index 72, hotbar at 63–71). Any `ServerboundSetCreativeModeSlotPacket` with a slot index > 45 is silently dropped by the server. **Fix**: `FixCreativeSlotRangeCheck`.
+1. **`ServerGamePacketListenerImpl.handleSetCreativeModeSlot` has hardcoded `slotNum <= 45`**. The vanilla `InventoryMenu` has 46 slots (max index 45). The modded `InventoryMenu` has 73 slots (max index 72, hotbar at 63–71). Any `ServerboundSetCreativeModeSlotPacket` with a slot index > 45 is silently dropped by the server. **Fix**: `CreativeSlotRangeCheck`.
 
 2. **Click sync relied on broken `broadcastChanges` path**. When you click a hotbar slot in the category tab:
    - `slotClicked` calls `ItemPickerMenu.clicked(slot.index, ...)` to process the click client-side (modifying `playerInventory`)
@@ -249,7 +252,7 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 
 **Root cause — four independent failures**:
 
-1. **Creative screen uses `imageHeight=136`, not `166`**. The creative screen constructor calls `super(menu, inv, title, 195, 136)`, NOT the default `176`×`166` constructor. The existing `IncreaseGlobalBackgroundHeight` only modifies the `166` in `AbstractContainerScreen`'s convenience constructor, which the creative screen never uses. Bottom tabs render at `topPos + imageHeight - 4`, so tabs never moved down with the default 136.
+1. **Creative screen uses `imageHeight=136`, not `166`**. The creative screen constructor calls `super(menu, inv, title, 195, 136)`, NOT the default `176`×`166` constructor. The existing `ContainerScreenHeight` only modifies the `166` in `AbstractContainerScreen`'s convenience constructor, which the creative screen never uses. Bottom tabs render at `topPos + imageHeight - 4`, so tabs never moved down with the default 136.
 
 2. **Vanilla `selectTab` hardcodes `i >= 36` for hotbar Y (112)**. In the modded layout, `i=36..62` are inventory slots, not hotbar. The vanilla code positions them all at hotbar Y=112, causing overlap. Also positions hotbar slots at `x = 3 + (i - 36) * 18` — for the modded hotbar (i=63..71), this gives x=489..633 (off-screen).
 
@@ -257,7 +260,7 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 
 4. **`Slot.index` is `public` but `Slot.x`/`Slot.y` are `public final`**. Modifying `x`/`y` at runtime requires removing the `final` modifier. The `SlotAccessor` mixin with `@Mutable` handles this at bytecode level. Direct reflection with `Field.modifiers` hack may fail on Java 25.
 
-**Fix**: `CreativeInventoryMixin.repositionExtendedSlots` TAIL inject on `selectTab`:
+**Fix**: `CreativeModeInventoryScreenMixin.repositionExtendedSlots` TAIL inject on `selectTab`:
 - Uses a **loop counter** (`int j`) instead of `slot.index` to identify each slot's InventoryMenu position
 - Dynamically adjusts `imageHeight` + `topPos` via reflection: 194 for inventory tab (tabs move down), 136 for all other tabs (tabs stay at vanilla position)
 - Repositions all SlotWrapper instances using `SlotAccessor` with proper 6-row inventory layout, correct hotbar Y (166), offhand at vanilla creative position (35, 20), and destroy item slot moved down (173, 166)
@@ -269,7 +272,7 @@ The creative screen (`CreativeModeInventoryScreen`) uses `ItemPickerMenu` as its
 | `@Mixin(MultiPlayerGameMode.class)` — intercept `handleContainerInput` / `ServerboundContainerClickPacket` | `MixinProcessor` crashes in this MC version. Constructor redirects on `MultiPlayerGameMode` are unreliable. |
 | Spacer slots in `ItemPickerMenu` (move hotbar 45→63) | Vanilla `CreativeModeInventoryScreen.slotClicked` has hardcoded range checks expecting hotbar at 45–53. Cursor items wouldn't release. |
 | `@ModifyConstant` on `<init>` with `intValue = 136` | Modifies bytecode BEFORE `super()` call — `this` uninitialized → `VerifyError` at class load. |
-| `@Shadow private int imageHeight` in `CreativeInventoryMixin` | Field is in parent class `AbstractContainerScreen`, not in the target class. Mixin can't resolve without a refMap. |
+| `@Shadow private int imageHeight` in `CreativeModeInventoryScreenMixin` | Field is in parent class `AbstractContainerScreen`, not in the target class. Mixin can't resolve without a refMap. |
 | Using `slot.index` for SlotWrapper slot identification | Vanilla `selectTab` adds SlotWrappers with `menu.slots.add()`, not `addSlot()` — `slot.index` stays at 0 for all. |
 | `@ModifyConstant` on `extractTabButton` to change tab gap globally | The `4` is correct for all non-inventory tabs. Only the inventory tab needs a larger gap. Fixed by adjusting `HEIGHT_EXTENDED` instead. |
 

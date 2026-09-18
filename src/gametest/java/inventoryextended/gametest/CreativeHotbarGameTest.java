@@ -15,7 +15,7 @@ public class CreativeHotbarGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getClientLevel().waitForChunksRender();
+            ClientTestCompat.waitForChunksRender(singleplayer);
 
             context.computeOnClient(mc -> {
                 var player = mc.player;

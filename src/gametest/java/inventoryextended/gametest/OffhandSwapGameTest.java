@@ -90,7 +90,7 @@ public class OffhandSwapGameTest implements CustomTestMethodInvoker {
         boolean hasOffhand = !inv.getItem(67).isEmpty();
 
         context.assertTrue(hasOffhand,
-            "Offhand at slot 67 should be accessible (FixSwapOffhandContainer)");
+            "Offhand at slot 67 should be accessible (AbstractContainerScreenOffhandSwap)");
 
         context.assertTrue(inv.getItem(67).is(Items.TORCH),
             "Offhand slot 67 should contain TORCH");

@@ -100,7 +100,7 @@ public class MixinApplicationGameTest implements CustomTestMethodInvoker {
         furnaceMenu.quickMoveStack(player, 3);
 
         context.assertTrue(furnaceContainer.getItem(1).is(Items.COAL),
-            "FixFurnaceMenuQuickMove: COAL should quick-move to fuel slot");
+            "FurnaceMenuQuickMove: COAL should quick-move to fuel slot");
 
         context.succeed();
     }
@@ -139,7 +139,7 @@ public class MixinApplicationGameTest implements CustomTestMethodInvoker {
         inv.setItem(62, new ItemStack(Items.BLAZE_POWDER, 1));
         SimpleContainer brewCont = new SimpleContainer(5);
         BrewingStandMenu brewingMenu = new BrewingStandMenu(0, inv, brewCont,
-                new SimpleContainerData(2));
+                new SimpleContainerData(4));
         brewingMenu.quickMoveStack(player, 58);
         context.assertTrue(brewCont.getItem(4).is(Items.BLAZE_POWDER),
             "BrewingStandMenu: BLAZE_POWDER from inv 62 should move to fuel");

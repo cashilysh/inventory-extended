@@ -14,6 +14,16 @@ build_version() {
         read -p "Press Enter to continue..."
         exit 1
     fi
+
+    echo
+    echo "Starting client game tests for Minecraft $1..."
+    ./gradlew runClientGameTest -PtargetVersion=$1
+    if [ $? -ne 0 ]; then
+        echo
+        echo "Client game tests failed for Minecraft $1! Check the error messages above."
+        read -p "Press Enter to continue..."
+        exit 1
+    fi
 }
 
 echo "Building mod for all Minecraft versions..."
@@ -21,6 +31,7 @@ echo "Building mod for all Minecraft versions..."
 
 build_version "26.1.2"
 build_version "26.2"
+build_version "26.3"
 
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#USER
 set -uo pipefail
 
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-25-openjdk}"
@@ -11,19 +12,33 @@ TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 GRADLE_EXTRA_ARGS=""
+TARGET_VERSION_OVERRIDE=""
 for arg in "$@"; do
     case "$arg" in
+        -PtargetVersion=*) TARGET_VERSION_OVERRIDE="${arg#-PtargetVersion=}" ;;
         -P*) GRADLE_EXTRA_ARGS="$GRADLE_EXTRA_ARGS $arg" ;;
     esac
 done
 
-MODE="${1:-all}"
-# strip mode from args if it's not a -P flag
-if [[ "$MODE" != -* ]]; then
+MODE="all"
+if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+    MODE="$1"
     shift 2>/dev/null || true
 fi
 
-GRADLE_CMD="./gradlew $GRADLE_EXTRA_ARGS --no-daemon"
+# Versions are read from BUILD ALL.sh so both scripts stay in sync.
+# Pass -PtargetVersion=<version> to run a single version instead.
+if [ -n "$TARGET_VERSION_OVERRIDE" ]; then
+    VERSIONS=("$TARGET_VERSION_OVERRIDE")
+else
+    mapfile -t VERSIONS < <(grep -oP '^\s*build_version\s+"\K[^"]+' "$SCRIPT_DIR/BUILD ALL.sh" 2>/dev/null)
+    if [ "${#VERSIONS[@]}" -eq 0 ]; then
+        VERSIONS=("26.1.2" "26.2" "26.3")
+    fi
+fi
+
+# GRADLE_CMD is rebuilt per version (see run_version)
+GRADLE_CMD=""
 
 > "$LOG_FILE"
 
@@ -81,7 +96,7 @@ log_section_header() {
 # UNIT TESTS
 # ──────────────────────────────────────────────────────────────────
 run_unit_tests() {
-    log_section_header "STEP 1: Unit Tests (Fabric Loader JUnit)"
+    log_section_header "MC $TARGET_VERSION — STEP 1: Unit Tests (Fabric Loader JUnit)"
 
     local unit_status="PASSED"
 
@@ -181,7 +196,7 @@ for fqcn in classes:
 }
 
 run_server_tests() {
-    log_section_header "STEP 2: Server Game Tests (Minecraft Gametest)"
+    log_section_header "MC $TARGET_VERSION — STEP 2: Server Game Tests (Minecraft Gametest)"
 
     local server_status="PASSED"
 
@@ -249,8 +264,8 @@ run_server_tests() {
 
     if [ "$server_status" = "PASSED" ]; then
         echo ""
-        printf "  \033[32mAll %s server game tests passed\033[0m\n" "$test_count"
-        { echo ""; echo "  All $test_count server game tests passed"; } >> "$LOG_FILE"
+        printf "  \033[32mAll %s server game tests passed\033[0m\n" "${#grid}"
+        { echo ""; echo "  All ${#grid} server game tests passed"; } >> "$LOG_FILE"
     else
         echo ""
         printf "  \033[31mServer game tests FAILED\033[0m\n"
@@ -265,7 +280,7 @@ run_server_tests() {
 # CLIENT GAME TESTS
 # ──────────────────────────────────────────────────────────────────
 run_client_tests() {
-    log_section_header "STEP 3: Client Game Tests (Fabric Client Gametest)"
+    log_section_header "MC $TARGET_VERSION — STEP 3: Client Game Tests (Fabric Client Gametest)"
 
     local client_status="PASSED"
 
@@ -336,44 +351,48 @@ init_log() {
     {
         echo "INVENTORY-EXTENDED TEST SUITE — $(date '+%Y-%m-%d %H:%M:%S')"
         echo "JAVA_HOME=${JAVA_HOME}"
+        echo "Versions: ${VERSIONS[*]}"
         echo ""
     } > "$LOG_FILE"
 }
 
-init_once() {
-    [ -s "$LOG_FILE" ] || init_log
-}
+run_version() {
+    local version="$1"
+    TARGET_VERSION="$version"
+    GRADLE_CMD="./gradlew -PtargetVersion=$version $GRADLE_EXTRA_ARGS --no-daemon"
 
-do_unit() {
-    init_once
-    run_unit_tests || OVERALL_EXIT=1
-}
-
-do_server() {
-    init_once
-    run_server_tests || OVERALL_EXIT=1
-}
-
-do_client() {
-    init_once
-    run_client_tests || OVERALL_EXIT=1
+    case "$MODE" in
+        unit)   run_unit_tests || OVERALL_EXIT=1 ;;
+        server) run_server_tests || OVERALL_EXIT=1 ;;
+        client) run_client_tests || OVERALL_EXIT=1 ;;
+        all)
+            run_unit_tests || OVERALL_EXIT=1
+            run_server_tests || OVERALL_EXIT=1
+            run_client_tests || OVERALL_EXIT=1
+            ;;
+    esac
 }
 
 case "$MODE" in
-    unit)   do_unit ;;
-    server) do_server ;;
-    client) do_client ;;
-    all)    do_unit; do_server; do_client ;;
+    unit|server|client|all) ;;
     *)
-        echo "Usage: $0 [unit|server|client|all]"
+        echo "Usage: $0 [unit|server|client|all] [-PtargetVersion=<version>]"
         echo ""
         echo "  unit    - Run unit tests (Fabric Loader JUnit)"
         echo "  server  - Run server game tests"
         echo "  client  - Run client game tests"
         echo "  all     - Run all tests (default)"
+        echo ""
+        echo "  Runs for every version listed in BUILD ALL.sh (${VERSIONS[*]}),"
+        echo "  unless -PtargetVersion=<version> is given."
         exit 1
         ;;
 esac
+
+init_log
+for v in "${VERSIONS[@]}"; do
+    run_version "$v"
+done
 
 echo ""
 echo "================================================================================"
@@ -382,6 +401,7 @@ if [ "$OVERALL_EXIT" -eq 0 ]; then
 else
     printf "  \033[31mSOME TESTS FAILED — check test_results.log for details\033[0m\n"
 fi
+echo "  Versions: ${VERSIONS[*]}"
 echo "  Log saved to: $LOG_FILE"
 echo "================================================================================"
 
@@ -393,6 +413,7 @@ echo "==========================================================================
     else
         echo "  SOME TESTS FAILED — check test_results.log for details"
     fi
+    echo "  Versions: ${VERSIONS[*]}"
     echo "  Log saved to: $LOG_FILE"
     echo "================================================================================"
 } >> "$LOG_FILE"

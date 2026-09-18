@@ -112,7 +112,7 @@ public class QuickMoveCoverageGameTest implements CustomTestMethodInvoker {
         inv.setItem(62, new ItemStack(Items.BLAZE_POWDER, 2));
         SimpleContainer brewingContainer = new SimpleContainer(5);
         BrewingStandMenu menu = new BrewingStandMenu(0, inv,
-                brewingContainer, new SimpleContainerData(2));
+                brewingContainer, new SimpleContainerData(4));
 
         menu.quickMoveStack(player, 58);
 

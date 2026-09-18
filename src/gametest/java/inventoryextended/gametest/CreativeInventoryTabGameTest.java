@@ -17,7 +17,7 @@ public class CreativeInventoryTabGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getClientLevel().waitForChunksRender();
+            ClientTestCompat.waitForChunksRender(singleplayer);
 
             context.computeOnClient(mc -> {
                 var player = mc.player;
@@ -73,7 +73,7 @@ public class CreativeInventoryTabGameTest implements FabricClientGameTest {
                 MinecraftServer server = mc.getSingleplayerServer();
                 if (server == null) {
                     throw new AssertionError("Integrated server not available "
-                        + "in singleplayer — FixCreativeSlotRangeCheck may not "
+                        + "in singleplayer — CreativeSlotRangeCheck may not "
                         + "be loaded for integrated server.");
                 }
 

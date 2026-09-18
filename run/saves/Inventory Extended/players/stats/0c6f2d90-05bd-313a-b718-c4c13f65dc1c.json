@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "minecraft:crafted": {
+      "minecraft:air": 0,
+      "minecraft:emerald": 3
+    },
+    "minecraft:custom": {
+      "minecraft:traded_with_villager": 3,
+      "minecraft:talked_to_villager": 1,
+      "minecraft:time_since_rest": 444,
+      "minecraft:walk_one_cm": 392,
+      "minecraft:total_world_time": 495,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 389,
+      "minecraft:play_time": 444,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 444
+    }
+  },
+  "DataVersion": 5023
+}

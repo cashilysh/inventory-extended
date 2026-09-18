@@ -1,0 +1,37 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:pufferfish_bucket": 1,
+      "minecraft:grindstone": 4
+    },
+    "minecraft:custom": {
+      "minecraft:talked_to_villager": 2,
+      "minecraft:time_since_rest": 2411,
+      "minecraft:leave_game": 1,
+      "minecraft:open_shulker_box": 1,
+      "minecraft:time_since_death": 2411,
+      "minecraft:interact_with_furnace": 1,
+      "minecraft:total_world_time": 2423,
+      "minecraft:interact_with_stonecutter": 2,
+      "minecraft:interact_with_loom": 2,
+      "minecraft:interact_with_crafting_table": 1,
+      "minecraft:inspect_dropper": 1,
+      "minecraft:nautilus_one_cm": 268,
+      "minecraft:walk_one_cm": 2394,
+      "minecraft:horse_one_cm": 200,
+      "minecraft:walk_under_water_one_cm": 251,
+      "minecraft:play_time": 2411,
+      "minecraft:jump": 3,
+      "minecraft:open_barrel": 1,
+      "minecraft:sprint_one_cm": 66,
+      "minecraft:open_chest": 3,
+      "minecraft:inspect_hopper": 1,
+      "minecraft:fly_one_cm": 1253,
+      "minecraft:interact_with_anvil": 1,
+      "minecraft:walk_on_water_one_cm": 166,
+      "minecraft:sneak_time": 9,
+      "minecraft:interact_with_grindstone": 2
+    }
+  },
+  "DataVersion": 5023
+}

@@ -28,7 +28,7 @@ public class BookEditingGameTest implements CustomTestMethodInvoker {
         inv.setItem(67, book.copy());
 
         context.assertTrue(inv.getItem(67).is(Items.WRITABLE_BOOK),
-            "Slot 67 should contain WRITABLE_BOOK (FixHandleEditBook)");
+            "Slot 67 should contain WRITABLE_BOOK (ServerGamePacketListenerEditBook)");
 
         context.assertTrue(inv.getItem(67).getCount() == 1,
             "Slot 67 book count should be 1");

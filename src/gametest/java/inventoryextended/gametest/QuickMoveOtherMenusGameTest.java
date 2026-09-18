@@ -3,6 +3,7 @@ package inventoryextended.gametest;
 import java.lang.reflect.Method;
 
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.BeaconMenu;
 import net.minecraft.world.inventory.BrewingStandMenu;
 import net.minecraft.world.inventory.CartographyTableMenu;
@@ -15,9 +16,13 @@ import net.minecraft.world.inventory.HorseInventoryMenu;
 import net.minecraft.world.inventory.LoomMenu;
 import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.SmithingMenu;
 import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameType;
 
@@ -77,13 +82,36 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         SimpleContainer brewingContainer = new SimpleContainer(5);
         BrewingStandMenu menu = new BrewingStandMenu(0, inv,
-                brewingContainer, new SimpleContainerData(2));
+                brewingContainer, new SimpleContainerData(4));
 
         inv.setItem(62, new ItemStack(Items.BLAZE_POWDER, 2));
         menu.quickMoveStack(player, 58);
 
         context.assertTrue(brewingContainer.getItem(4).is(Items.BLAZE_POWDER),
             "BrewingStandMenu: BLAZE_POWDER from inv slot 62 should move to fuel slot (slot 4)");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testBrewingStandPotionQuickMove(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        SimpleContainer brewingContainer = new SimpleContainer(5);
+        BrewingStandMenu menu = new BrewingStandMenu(0, inv,
+                brewingContainer, new SimpleContainerData(4));
+
+        // 26.3 validates potion inputs via PotionIngredient.isPotionInput
+        inv.setItem(62, new ItemStack(Items.POTION, 1));
+        menu.quickMoveStack(player, 58);
+
+        boolean movedToPotionSlot = brewingContainer.getItem(0).is(Items.POTION)
+                || brewingContainer.getItem(1).is(Items.POTION)
+                || brewingContainer.getItem(2).is(Items.POTION);
+        context.assertTrue(movedToPotionSlot,
+            "BrewingStandMenu: POTION from extended inv 62 should move to a potion slot");
 
         context.succeed();
     }
@@ -209,6 +237,135 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
     }
 
     @GameTest
+    public void testMerchantTradeFromExtendedSlot(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        inv.setItem(62, new ItemStack(Items.EMERALD, 1));
+        menu.tryMoveItems(0);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.EMERALD),
+            "MerchantMenu: EMERALD from extended inv 62 should move to payment slot 0");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testMerchantTradeFromHotbar(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        inv.setItem(8, new ItemStack(Items.EMERALD, 1));
+        menu.tryMoveItems(0);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.EMERALD),
+            "MerchantMenu: EMERALD from hotbar inv 8 should move to payment slot 0");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testMerchantShiftClickFillsPaymentSlot(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        inv.setItem(62, new ItemStack(Items.EMERALD, 1));
+        menu.quickMoveStack(player, 56);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.EMERALD),
+            "MerchantMenu: shift-click EMERALD from extended inv 62 should move to payment slot 0");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testMerchantShiftClickFromHotbar(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        inv.setItem(8, new ItemStack(Items.EMERALD, 1));
+        menu.quickMoveStack(player, 65);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.EMERALD),
+            "MerchantMenu: shift-click EMERALD from hotbar inv 8 should move to payment slot 0");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testMerchantShiftClickNonMatchingFallsThrough(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        inv.setItem(62, new ItemStack(Items.DIRT, 1));
+        menu.quickMoveStack(player, 56);
+
+        context.assertTrue(menu.getSlot(0).getItem().isEmpty()
+                && menu.getSlot(1).getItem().isEmpty(),
+            "MerchantMenu: non-matching DIRT should not enter payment slots");
+        context.assertTrue(!inv.getItem(62).is(Items.DIRT),
+            "MerchantMenu: non-matching DIRT should still quick-move normally");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testMerchantTradeUsesUpdatedOffers(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        MerchantMenu menu = new MerchantMenu(0, inv);
+        menu.setOffers(makeEmeraldOffer());
+
+        // 26.3 refreshes villager offers while the trading UI is open; the menu
+        // must pull from the current offer, not a stale one.
+        MerchantOffers updated = new MerchantOffers();
+        updated.add(new MerchantOffer(
+            new ItemCost(Items.DIAMOND, 1),
+            new ItemStack(Items.STICK),
+            1, 0, 1.0f));
+        menu.setOffers(updated);
+
+        inv.setItem(62, new ItemStack(Items.DIAMOND, 1));
+        menu.tryMoveItems(0);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.DIAMOND),
+            "MerchantMenu: trade should pull from the updated offer (DIAMOND)");
+
+        context.succeed();
+    }
+
+    private static MerchantOffers makeEmeraldOffer() {
+        MerchantOffers offers = new MerchantOffers();
+        offers.add(new MerchantOffer(
+            new ItemCost(Items.EMERALD, 1),
+            new ItemStack(Items.STICK),
+            1, 0, 1.0f));
+        return offers;
+    }
+
+    @GameTest
     public void testDispenserQuickMove(GameTestHelper context) {
         var player = context.makeMockPlayer(GameType.SURVIVAL);
         Inventory inv = player.getInventory();
@@ -264,6 +421,63 @@ public class QuickMoveOtherMenusGameTest implements CustomTestMethodInvoker {
 
         context.assertTrue(menu.slots.size() >= 1,
             "HorseInventoryMenu must have at least 1 slot");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testAnvilQuickMove(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        AnvilMenu menu = new AnvilMenu(0, inv, ContainerLevelAccess.NULL);
+
+        inv.setItem(62, new ItemStack(Items.DIAMOND_SWORD, 1));
+        menu.quickMoveStack(player, 56);
+
+        context.assertTrue(menu.getSlot(0).getItem().is(Items.DIAMOND_SWORD),
+            "AnvilMenu: DIAMOND_SWORD from extended inv 62 (menu 56) should move to input slot 0");
+
+        inv.setItem(8, new ItemStack(Items.GOLDEN_SWORD, 1));
+        menu.quickMoveStack(player, 65);
+
+        context.assertTrue(menu.getSlot(1).getItem().is(Items.GOLDEN_SWORD),
+            "AnvilMenu: GOLDEN_SWORD from hotbar inv 8 (menu 65) should move to input slot 1");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testSmithingQuickMove(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        SmithingMenu menu = new SmithingMenu(0, inv, ContainerLevelAccess.NULL);
+
+        inv.setItem(62, new ItemStack(Items.DIAMOND_SWORD, 1));
+        menu.quickMoveStack(player, 57);
+
+        context.assertTrue(menu.getSlot(1).getItem().is(Items.DIAMOND_SWORD),
+            "SmithingMenu: DIAMOND_SWORD from extended inv 62 (menu 57) should move to base slot 1");
+
+        context.succeed();
+    }
+
+    @GameTest
+    public void testSmithingHotbarQuickMove(GameTestHelper context) {
+        var player = context.makeMockPlayer(GameType.SURVIVAL);
+        Inventory inv = player.getInventory();
+        clearInv(inv);
+
+        SmithingMenu menu = new SmithingMenu(0, inv, ContainerLevelAccess.NULL);
+
+        inv.setItem(8, new ItemStack(Items.DIAMOND_PICKAXE, 1));
+        menu.quickMoveStack(player, 66);
+
+        context.assertTrue(menu.getSlot(1).getItem().is(Items.DIAMOND_PICKAXE),
+            "SmithingMenu: DIAMOND_PICKAXE from hotbar inv 8 (menu 66) should move to base slot 1");
 
         context.succeed();
     }

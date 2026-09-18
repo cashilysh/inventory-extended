@@ -3,6 +3,11 @@ Dependencies:
 P7dR8mSH
 
 
+1.1.3
+
+Fix Anvil and Smithing table quick-move
+Fix Trading slots
+
 1.1.2
 
 - Fixed Shulkerbox GUI
