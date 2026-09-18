@@ -155,4 +155,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-./gradlew runclient
+if [ -n "$SELECTED" ]; then
+    ./gradlew runclient -PtargetVersion="$SELECTED"
+else
+    ./gradlew runclient
+fi
